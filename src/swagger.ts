@@ -1,5 +1,4 @@
 // src/swagger.ts
-
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const options: swaggerJsdoc.Options = {
@@ -8,7 +7,7 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'API Vizinhança Solidária',
       version: '1.0.0',
-      description: 'Documentação da API para o projeto Vizinhança Solidária, uma plataforma para conectar vizinhos.',
+      description: 'Documentação da API para o projeto Vizinhança Solidária.',
     },
     servers: [
       {
@@ -21,56 +20,72 @@ const options: swaggerJsdoc.Options = {
         User: {
           type: 'object',
           properties: {
-            id: {
-              type: 'string',
-              description: 'ID único do usuário (UUID)',
-              example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef'
-            },
-            name: {
-              type: 'string',
-              description: 'Nome do usuário',
-              example: 'João da Silva'
-            },
-            email: {
-              type: 'string',
-              description: 'Email do usuário',
-              example: 'joao.silva@example.com'
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Data de criação do usuário'
-            }
-          }
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
         },
         UserRegister: {
           type: 'object',
           required: ['name', 'email', 'password'],
           properties: {
-            name: {
-              type: 'string',
-              description: 'Nome do usuário',
-              example: 'João da Silva'
+            name: { type: 'string', example: 'João da Silva' },
+            email: { type: 'string', format: 'email', example: 'joao@example.com' },
+            password: { type: 'string', example: 'senhaForte123' },
+          },
+        },
+      },
+    },
+    
+    paths: {
+      '/users/register': {
+        post: {
+          tags: ['Users'],
+          summary: 'Registra um novo usuário',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/UserRegister' } },
             },
-            email: {
-              type: 'string',
-              description: 'Email para cadastro',
-              example: 'joao.silva@example.com'
+          },
+          responses: {
+            '201': { description: 'Usuário criado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+            '409': { description: 'Conflito, o email já está em uso' },
+            '400': { description: 'Dados inválidos fornecidos' },
+          },
+        },
+      },
+      '/users/login': {
+        post: {
+          tags: ['Users'],
+          summary: 'Autentica um usuário',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password'],
+                  properties: {
+                    email: { type: 'string', format: 'email', example: 'joao@example.com' },
+                    password: { type: 'string', example: 'senhaForte123' },
+                  },
+                },
+              },
             },
-            password: {
-              type: 'string',
-              description: 'Senha do usuário (mínimo 8 caracteres)',
-              example: 'senhaForte123'
-            }
-          }
-        }
-      }
-    }
+          },
+          responses: {
+            '200': { description: 'Login bem-sucedido', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+            '401': { description: 'Não autorizado, credenciais inválidas' },
+          },
+        },
+      },
+    },
   },
-
-  apis: ['./src/routes/*.ts'],
+  
+  apis: [],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
-
 export default swaggerSpec;
