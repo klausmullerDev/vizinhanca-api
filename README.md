@@ -1,6 +1,3 @@
-Claro\! Aqui está o texto com uma formatação limpa e organizada, utilizando as convenções do Markdown para uma melhor legibilidade.
-
------
 
 # API Vizinhança Solidária
 
