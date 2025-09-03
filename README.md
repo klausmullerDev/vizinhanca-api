@@ -1,63 +1,74 @@
-API Vizinhança Solidária
+Claro\! Aqui está o texto com uma formatação limpa e organizada, utilizando as convenções do Markdown para uma melhor legibilidade.
+
+-----
+
+# API Vizinhança Solidária
 
 Esta é a API para o projeto Vizinhança Solidária, uma plataforma para conectar pessoas que precisam de ajuda com voluntários em sua comunidade.
 
-Pré-requisitos
+-----
+
+## Pré-requisitos
 
 Antes de começar, garanta que você tenha as seguintes ferramentas instaladas em sua máquina:
 
-    Node.js (versão 18.x ou superior)
+  - **Node.js** (versão 18.x ou superior)
+  - **Docker** e **Docker Compose**
+  - **Git**
 
-    Docker e Docker Compose
+-----
 
-    Git
-
-🚀 Como Rodar o Projeto
+## 🚀 Como Rodar o Projeto
 
 Siga os passos abaixo para configurar e executar o ambiente de desenvolvimento localmente.
 
-1. Clonar o Repositório
+### 1\. Clonar o Repositório
 
-Bash
-
+```bash
 git clone https://github.com/klausmullerDev/vizinhanca-api.git
 cd vizinhanca-api
+```
 
-2. Instalar as Dependências
+### 2\. Instalar as Dependências
 
-Este comando irá instalar todas as dependências do projeto listadas no package.json.
-Bash
+Este comando irá instalar todas as dependências do projeto listadas no `package.json`.
 
+```bash
 npm install
+```
 
-3. Configurar Variáveis de Ambiente
+### 3\. Configurar Variáveis de Ambiente
 
-O projeto precisa de um arquivo .env com a string de conexão do banco de dados. Você pode copiar o arquivo de exemplo:
-Bash
+O projeto precisa de um arquivo `.env` com a string de conexão do banco de dados. Você pode copiar o arquivo de exemplo:
 
+```bash
 cp .env.example .env
+```
 
-    Nota: O valor padrão no .env.example já está configurado para funcionar com o ambiente Docker deste projeto.
+> **Nota:** O valor padrão no `.env.example` já está configurado para funcionar com o ambiente Docker deste projeto.
 
-4. Iniciar o Banco de Dados com Docker
+### 4\. Iniciar o Banco de Dados com Docker
 
 Este comando irá iniciar um container com o banco de dados PostgreSQL em segundo plano.
-Bash
 
+```bash
 docker-compose up -d
+```
 
-5. Aplicar as Migrations do Banco de Dados
+### 5\. Aplicar as Migrations do Banco de Dados
 
 Com o banco de dados rodando, este comando irá criar todas as tabelas necessárias com base no schema do Prisma.
-Bash
 
+```bash
 npx prisma migrate dev
+```
 
-6. Iniciar a Aplicação
+### 6\. Iniciar a Aplicação
 
 Agora você pode iniciar o servidor de desenvolvimento.
-Bash
 
+```bash
 npm run dev
+```
 
-Após executar este comando, a API estará rodando em http://localhost:3333 (ou a porta que você definir).
+Após executar este comando, a API estará rodando em `http://localhost:3333` (ou a porta que você definir).
