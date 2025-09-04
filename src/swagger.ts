@@ -35,9 +35,23 @@ const options: swaggerJsdoc.Options = {
             password: { type: 'string', example: 'senhaForte123' },
           },
         },
+        LoginSuccessResponse: {
+          type: 'object',
+          properties: {
+            user: { $ref: '#/components/schemas/User' },
+            token: { type: 'string' },
+          },
+        },
+      },
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
       },
     },
-    
+    // DEFINIÇÃO DOS ENDPOINTS DIRETAMENTE AQUI
     paths: {
       '/users/register': {
         post: {
@@ -50,16 +64,16 @@ const options: swaggerJsdoc.Options = {
             },
           },
           responses: {
-            '201': { description: 'Usuário criado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
-            '409': { description: 'Conflito, o email já está em uso' },
-            '400': { description: 'Dados inválidos fornecidos' },
+            '201': { description: 'Usuário criado', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+            '409': { description: 'Email já em uso' },
+            '400': { description: 'Dados inválidos' },
           },
         },
       },
       '/users/login': {
         post: {
           tags: ['Users'],
-          summary: 'Autentica um usuário',
+          summary: 'Autentica um usuário e retorna um token JWT',
           requestBody: {
             required: true,
             content: {
@@ -68,23 +82,22 @@ const options: swaggerJsdoc.Options = {
                   type: 'object',
                   required: ['email', 'password'],
                   properties: {
-                    email: { type: 'string', format: 'email', example: 'joao@example.com' },
-                    password: { type: 'string', example: 'senhaForte123' },
+                    email: { type: 'string', format: 'email' },
+                    password: { type: 'string' },
                   },
                 },
               },
             },
           },
           responses: {
-            '200': { description: 'Login bem-sucedido', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
-            '401': { description: 'Não autorizado, credenciais inválidas' },
+            '200': { description: 'Login bem-sucedido', content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginSuccessResponse' } } } },
+            '401': { description: 'Credenciais inválidas' },
           },
         },
       },
     },
   },
-  
-  apis: [],
+  apis: [], 
 };
 
 const swaggerSpec = swaggerJsdoc(options);

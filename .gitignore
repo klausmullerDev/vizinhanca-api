@@ -21,3 +21,6 @@ node_modules
 
 # Log files
 *.log
+
+#etc
+.DS_Store

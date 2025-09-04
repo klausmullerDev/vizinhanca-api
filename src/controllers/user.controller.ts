@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import UserService, { AuthenticationError } from '../services/user.service';
 import logger from '../utils/logger';
+import jwt from 'jsonwebtoken';
 
 class UserController {
     async create(req: Request, res: Response) {
         try {
             
             const userResponse = await UserService.create(req.body);
+            
 
             logger.info(`Usuário criado com sucesso: ${userResponse.email}`);
             return res.status(201).json(userResponse);
@@ -30,8 +32,17 @@ class UserController {
             
             const userResponse = await UserService.login(email, password);
 
+            const payload = { userId: userResponse.id, email: userResponse.email };
+            
+            const secret = process.env.JWT_SECRET as string
+
+            const options = { expiresIn: 86400 };
+
+            const token = jwt.sign(payload, secret, options);
+
             logger.info(`Usuário logado com sucesso: ${email}`);
-            return res.status(200).json(userResponse);
+            
+            return res.status(200).json({user : userResponse, token });
         } catch (error: any) {
 
             if (error instanceof AuthenticationError) {
