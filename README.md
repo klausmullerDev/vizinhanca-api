@@ -40,7 +40,7 @@ cd vizinhanca-api
 
 ### 3\. Instalar as Dependências
 
-```bash
+```
 npm install
 ```
 
