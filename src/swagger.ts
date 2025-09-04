@@ -1,4 +1,5 @@
 // src/swagger.ts
+import e from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const options: swaggerJsdoc.Options = {
@@ -39,7 +40,7 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             user: { $ref: '#/components/schemas/User' },
-            token: { type: 'string' },
+            token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'},
           },
         },
       },

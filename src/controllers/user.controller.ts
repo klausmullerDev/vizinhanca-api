@@ -55,6 +55,11 @@ class UserController {
             return res.status(500).json({ message: 'Erro interno do servidor.' });
         }
     }
+    
+    
+    
 }
 
-export default new UserController();
+export default new UserController();''
+
+
