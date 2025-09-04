@@ -33,22 +33,22 @@ Antes de começar, garanta que você tenha as seguintes ferramentas instaladas e
     Git
 
 2. Clonar o Repositório
-
+```
 git clone [https://github.com/klausmullerDev/vizinhanca-api.git](https://github.com/klausmullerDev/vizinhanca-api.git)
 cd vizinhanca-api
-
+```
 
 3. Instalar as Dependências
-
+```
 npm install
-
+```
 
 4. Configurar Variáveis de Ambiente
 
 O projeto precisa de um arquivo .env para armazenar variáveis sensíveis. Crie uma cópia do arquivo de exemplo:
-
+```
 cp .env.example .env
-
+```
 
 O arquivo .env.example deve conter as seguintes chaves. Certifique-se de que seu .env tenha a JWT_SECRET preenchida com um valor seguro e aleatório.
 
@@ -62,23 +62,23 @@ JWT_SECRET="sua-chave-secreta-super-longa-e-aleatoria-aqui"
 5. Iniciar o Banco de Dados com Docker
 
 Este comando irá iniciar o container do PostgreSQL em segundo plano.
-
+```
 docker-compose up -d
-
+```
 
 6. Aplicar as Migrations do Banco de Dados
 
 Com o banco de dados rodando, este comando irá criar todas as tabelas necessárias.
-
+```
 npx prisma migrate dev
-
+```
 
 7. Iniciar a Aplicação
 
 Agora você pode iniciar o servidor de desenvolvimento.
-
+```
 npm run dev
-
+```
 
     Dica: Para uma melhor experiência de desenvolvimento, use dois terminais: um para manter o banco de dados rodando (docker-compose up -d) e outro para rodar a aplicação (npm run dev), que reiniciará automaticamente a cada alteração no código.
 
