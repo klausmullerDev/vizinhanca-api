@@ -1,4 +1,4 @@
-API Vizinhança Solidária
+**API Vizinhança Solidária**
 
 Esta é a API para o projeto Vizinhança Solidária, uma plataforma para conectar pessoas que precisam de ajuda com voluntários em sua comunidade.
 ✨ Tecnologias Utilizadas
