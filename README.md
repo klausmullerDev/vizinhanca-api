@@ -53,11 +53,12 @@ cp .env.example .env
 O arquivo .env.example deve conter as seguintes chaves. Certifique-se de que seu .env tenha a JWT_SECRET preenchida com um valor seguro e aleatório.
 
 # String de conexão com o banco de dados PostgreSQL
+```
 DATABASE_URL="postgresql://docker:docker@localhost:5432/meu_projeto?schema=public"
 
 # Chave secreta para assinar os tokens JWT
 JWT_SECRET="sua-chave-secreta-super-longa-e-aleatoria-aqui"
-
+```
 
 5. Iniciar o Banco de Dados com Docker
 
@@ -90,13 +91,13 @@ A documentação completa dos endpoints, incluindo modelos de dados e a possibil
     URL da Documentação: http://localhost:3000/api-docs
 
 Endpoints Disponíveis
-
+```
 | Método | Rota | Descrição |
 | POST | /users/register | Cria uma nova conta de usuário. |
 | POST | /users/login | Autentica um usuário e retorna um token JWT. |
 | PATCH | /users/profile | (Exemplo) Atualiza o perfil do usuário logado. |
 📜 Scripts NPM
-
+```
     npm run dev: Inicia o servidor em modo de desenvolvimento com ts-node-dev.
 
     npm run build: Compila o código TypeScript para JavaScript (para produção).
