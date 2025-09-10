@@ -3,6 +3,7 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger';
 import userRouter from './routes/user.routes';
+import pedidoRouter from './routes/pedido.routes';
 import logger from './utils/logger';
 
 const app = express();
@@ -15,6 +16,8 @@ app.use(cors());
 
 
 app.use('/users', userRouter); 
+app.use('/pedidos', pedidoRouter); 
+
 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

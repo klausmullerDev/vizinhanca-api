@@ -15,8 +15,8 @@ const options: swaggerJsdoc.Options = {
       },
     ],
     components: {
-      // --- Modelos de Dados (Schemas) ---
       schemas: {
+        // --- Schemas de Utilizador ---
         User: {
           type: 'object',
           properties: {
@@ -74,8 +74,32 @@ const options: swaggerJsdoc.Options = {
             }
           }
         },
+        // --- NOVOS SCHEMAS PARA PEDIDOS ---
+        Pedido: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            titulo: { type: 'string' },
+            descricao: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            author: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                name: { type: 'string' }
+              }
+            }
+          }
+        },
+        CreatePedidoRequest: {
+          type: 'object',
+          required: ['titulo', 'descricao'],
+          properties: {
+            titulo: { type: 'string', example: 'Preciso de ajuda com compras' },
+            descricao: { type: 'string', example: 'Sou do grupo de risco e preciso que alguém me ajude a ir ao supermercado esta semana.' },
+          }
+        },
       },
-      // --- Esquema de Segurança (Autenticação com Token) ---
       securitySchemes: {
         bearerAuth: {
           type: 'http',
@@ -84,7 +108,6 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
-    // --- Definição dos Endpoints ---
     paths: {
       // --- Endpoints de Autenticação e Perfil ---
       '/register': {
@@ -132,6 +155,30 @@ const options: swaggerJsdoc.Options = {
           }
         }
       },
+      
+      '/pedidos': {
+        get: {
+          tags: ['Pedidos'],
+          summary: 'Lista todos os pedidos de ajuda',
+          responses: {
+            '200': {
+              description: 'Lista de pedidos',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pedido' } } } }
+            },
+          }
+        },
+        post: {
+          tags: ['Pedidos'],
+          summary: 'Cria um novo pedido de ajuda',
+          security: [{ bearerAuth: [] }],
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePedidoRequest' } } } },
+          responses: {
+            '201': { description: 'Pedido criado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } },
+            '400': { description: 'Dados inválidos' },
+            '401': { description: 'Não autorizado' },
+          }
+        }
+      }
     },
   },
   apis: [],

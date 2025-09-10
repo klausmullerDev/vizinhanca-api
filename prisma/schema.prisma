@@ -54,30 +54,33 @@ model Endereco {
 
 model Pedido {
   id        String   @id @default(uuid())
+  titulo    String 
+  descricao String 
+  createdAt DateTime @default(now()) 
 
-  authorId String
-  author   User      @relation(fields: [authorId], references: [id])
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id])
   interesses Interesse[]
 
   @@map("pedidos")
 }
 
 model Interesse {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   userId   String
-  user     User     @relation(fields: [userId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
   pedidoId String
-  pedido   Pedido   @relation(fields: [pedidoId], references: [id])
+  pedido   Pedido @relation(fields: [pedidoId], references: [id])
 
   @@map("interesses")
 }
 
 model Avaliacao {
-  id        String   @id @default(uuid())
+  id       String @id @default(uuid())
   authorId String
-  author   User     @relation(fields: [authorId], references: [id])
-  
+  author   User   @relation(fields: [authorId], references: [id])
+
   @@map("avaliacoes")
 }
 
