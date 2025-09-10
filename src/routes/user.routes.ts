@@ -9,5 +9,9 @@ userRouter.post('/register', UserController.create);
 userRouter.post('/login', UserController.login);
 
 
+userRouter.get('/profile', authMiddleware, UserController.getMyProfile);
+userRouter.put('/profile', authMiddleware, UserController.updateProfile);
+
+
 
 export default userRouter;
