@@ -47,9 +47,9 @@ model Endereco {
   estado      String
   cep         String
 
-  // Relacionamento um-para-um com User
+  
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("enderecos")
 }
@@ -61,7 +61,7 @@ model Pedido {
   createdAt DateTime @default(now())
 
   authorId   String
-  author     User        @relation(fields: [authorId], references: [id])
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   interesses Interesse[]
 
   @@map("pedidos")
@@ -70,18 +70,23 @@ model Pedido {
 model Interesse {
   id String @id @default(uuid())
 
+  
   userId   String
-  user     User   @relation(fields: [userId], references: [id])
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   pedidoId String
-  pedido   Pedido @relation(fields: [pedidoId], references: [id])
+  
+  
+  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 
+  
+  @@unique([pedidoId, userId], name: "unique_interesse")
   @@map("interesses")
 }
 
 model Avaliacao {
   id       String @id @default(uuid())
   authorId String
-  author   User   @relation(fields: [authorId], references: [id])
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("avaliacoes")
 }
@@ -92,3 +97,4 @@ model Categoria {
 
   @@map("categorias")
 }
+

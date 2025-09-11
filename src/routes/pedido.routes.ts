@@ -7,6 +7,9 @@ const pedidoRouter = Router();
 pedidoRouter.get('/', authMiddleware, PedidoController.findAll);
 pedidoRouter.post('/', authMiddleware, PedidoController.create);
 
+pedidoRouter.post('/:id/interesse', authMiddleware, PedidoController.manifestarInteresse);
+
+
 
 
 

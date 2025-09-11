@@ -157,7 +157,8 @@ const options: swaggerJsdoc.Options = {
         get: {
           tags: ['Pedidos'],
           summary: 'Lista todos os pedidos de ajuda',
-          responses: { '200': { description: 'Lista de pedidos', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pedido' } } } } } },
+          security: [{ bearerAuth: [] }],
+          responses: { '200': { description: 'Lista de pedidos', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pedido' } } } } }, '401': { description: 'Não autorizado' } },
         },
         post: {
           tags: ['Pedidos'],
@@ -165,6 +166,28 @@ const options: swaggerJsdoc.Options = {
           security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePedidoRequest' } } } },
           responses: { '201': { description: 'Pedido criado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } }, '400': { description: 'Dados inválidos' }, '401': { description: 'Não autorizado' } },
+        }
+      },
+      // --- NOVO ENDPOINT DE INTERESSE ---
+      '/pedidos/{id}/interesse': {
+        post: {
+          tags: ['Pedidos'],
+          summary: 'Manifesta interesse em ajudar em um pedido específico',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: 'path',
+              name: 'id',
+              required: true,
+              schema: { type: 'string', format: 'uuid' },
+              description: 'O ID do pedido no qual o utilizador quer manifestar interesse.'
+            }
+          ],
+          responses: {
+            '201': { description: 'Interesse registado com sucesso.', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } },
+            '400': { description: 'Pedido não encontrado, ou o utilizador já manifestou interesse, ou está a tentar manifestar interesse no seu próprio pedido.' },
+            '401': { description: 'Não autorizado.' }
+          }
         }
       }
     },
@@ -174,4 +197,3 @@ const options: swaggerJsdoc.Options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 export default swaggerSpec;
-
