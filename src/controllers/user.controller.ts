@@ -23,10 +23,7 @@ class UserController {
         const { email, password } = req.body;
         try {
             const userResponse = await UserService.login(email, password);
-
-            // O payload é criado com 'id' (CORRETO)
             const payload = { id: userResponse.id, email: userResponse.email };
-
             const secret = process.env.JWT_SECRET as string;
             const options = { expiresIn: 86400 };
             const token = jwt.sign(payload, secret, options);
@@ -47,12 +44,9 @@ class UserController {
             if (!req.user) {
                 return res.status(401).json({ message: 'Utilizador não autenticado.' });
             }
-
-            // CORREÇÃO AQUI: Lemos a propriedade 'id' do token (CORRETO)
             const userId = req.user.id;
             const userProfile = await UserService.getProfile(userId);
             return res.status(200).json(userProfile);
-
         } catch (error: any) {
             logger.error(`Erro ao buscar perfil: ${error.message}`);
             return res.status(404).json({ message: error.message });
@@ -64,22 +58,50 @@ class UserController {
             if (!req.user) {
                 return res.status(401).json({ message: 'Utilizador não autenticado.' });
             }
-
-            // CORREÇÃO AQUI: Lemos a propriedade 'id' do token (CORRETO)
             const userId = req.user.id;
             const profileData = req.body;
-
             const updatedUser = await UserService.updateProfile(userId, profileData);
-
             logger.info(`Perfil do utilizador ${userId} atualizado com sucesso.`);
             return res.status(200).json(updatedUser);
-
         } catch (error: any) {
-            // CORREÇÃO AQUI: Usamos 'id' também no log de erro (CORRETO)
             logger.error(`Erro ao atualizar perfil do utilizador ${req.user?.id}: ${error.message}`);
             return res.status(400).json({ message: 'Não foi possível atualizar o perfil.', details: error.message });
+        }
+    }
+
+    // --- NOVOS MÉTODOS PARA REDEFINIÇÃO DE SENHA ---
+
+    async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+            await UserService.forgotPassword(email);
+            // Por segurança, a resposta é sempre a mesma, existindo ou não o e-mail.
+            return res.status(200).json({ message: 'Se um utilizador com este e-mail existir, um link para redefinição de senha foi enviado.' });
+        } catch (error: any) {
+            logger.error(`Erro no processo de forgotPassword: ${error.message}`);
+            return res.status(500).json({ message: 'Erro interno do servidor.' });
+        }
+    }
+
+    async resetPassword(req: Request, res: Response) {
+        try {
+            const { token } = req.params;
+            const { password } = req.body;
+
+            if (!password) {
+                return res.status(400).json({ message: 'A nova senha é obrigatória.' });
+            }
+
+            await UserService.resetPassword(token, password);
+            return res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+
+        } catch (error: any) {
+            logger.error(`Erro ao redefinir senha com token: ${error.message}`);
+            // Retorna o erro do serviço (ex: 'Token inválido ou expirado.')
+            return res.status(400).json({ message: error.message });
         }
     }
 }
 
 export default new UserController();
+

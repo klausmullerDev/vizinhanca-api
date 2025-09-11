@@ -13,5 +13,7 @@ userRouter.get('/profile', authMiddleware, UserController.getMyProfile);
 userRouter.put('/profile', authMiddleware, UserController.updateProfile);
 
 
+userRouter.post('/forgot-password', UserController.forgotPassword);
+userRouter.post('/reset-password/:token', UserController.resetPassword);
 
 export default userRouter;

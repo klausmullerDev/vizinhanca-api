@@ -1,24 +1,17 @@
 import { prisma } from '../database/prismaClient';
 import { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/mailer';
 
 export type UserPublic = Omit<User, 'password'>;
 
-
 export type UserWithProfileStatus = UserPublic & {
   isProfileComplete: boolean;
-  endereco: {} | null; 
+  endereco: {} | null;
 };
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-  };
-}
-
-
 
 type UserCreateDTO = Omit<User, 'id' | 'createdAt'>;
-
 
 type UserProfileDTO = {
   name?: string;
@@ -37,15 +30,12 @@ type UserProfileDTO = {
   }
 }
 
-
-
 export class AuthenticationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'AuthenticationError';
   }
 }
-
 
 class UserService {
 
@@ -54,7 +44,6 @@ class UserService {
       where: { email },
     });
   }
-
 
   async getProfile(userId: string): Promise<UserWithProfileStatus> {
     const userProfile = await prisma.user.findUnique({
@@ -65,10 +54,9 @@ class UserService {
     });
 
     if (!userProfile) {
-      throw new Error('Usuário não encontrado.');
+      throw new Error('Utilizador não encontrado.');
     }
 
-    
     const isProfileComplete =
       !!userProfile.cpf &&
       !!userProfile.telefone &&
@@ -79,7 +67,7 @@ class UserService {
 
     return {
       ...userPublic,
-      isProfileComplete, 
+      isProfileComplete,
     };
   }
 
@@ -140,6 +128,53 @@ class UserService {
     const { password, ...userPublic } = updatedUser;
     return userPublic;
   }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.findByEmail(email);
+
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hora
+
+      await prisma.user.update({
+        where: { email },
+        data: {
+          resetPasswordToken: resetToken,
+          resetPasswordExpires: resetTokenExpires,
+        },
+      });
+
+      await sendPasswordResetEmail(user.email, resetToken);
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<UserPublic> {
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new Error('Token inválido ou expirado.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    const { password, ...userPublic } = updatedUser;
+    return userPublic;
+  }
 }
 
 export default new UserService();
+

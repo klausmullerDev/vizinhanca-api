@@ -24,10 +24,12 @@ model User {
   sexo             String?
   createdAt        DateTime  @default(now())
 
-  // Relacionamento um-para-um com Endereco
-  endereco Endereco?
+  
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
 
-  // Relacionamentos existentes
+  
+  endereco   Endereco?
   pedidos    Pedido[]
   interesses Interesse[]
   avaliacoes Avaliacao[]
@@ -54,9 +56,9 @@ model Endereco {
 
 model Pedido {
   id        String   @id @default(uuid())
-  titulo    String 
-  descricao String 
-  createdAt DateTime @default(now()) 
+  titulo    String
+  descricao String
+  createdAt DateTime @default(now())
 
   authorId   String
   author     User        @relation(fields: [authorId], references: [id])
