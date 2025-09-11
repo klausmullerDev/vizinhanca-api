@@ -1,9 +1,9 @@
-**API Vizinhança Solidária**
+API Vizinhança Solidária
 
-Esta é a API para o projeto Vizinhança Solidária, uma plataforma para conectar pessoas que precisam de ajuda com voluntários em sua comunidade.
+Esta é a API para o projeto Vizinhança Solidária, uma plataforma desenhada para ser o coração de uma comunidade fechada, conectando pessoas que precisam de ajuda com voluntários dispostos a colaborar.
 ✨ Tecnologias Utilizadas
 
-Este projeto foi construído utilizando as seguintes tecnologias:
+Este projeto foi construído com foco em robustez, escalabilidade e manutenibilidade, utilizando as seguintes tecnologias:
 
     Backend: Node.js, TypeScript, Express.js
 
@@ -11,20 +11,22 @@ Este projeto foi construído utilizando as seguintes tecnologias:
 
     Banco de Dados: PostgreSQL
 
-    Autenticação: Passport.js (Estratégia Local), JSON Web Tokens (JWT)
+    Autenticação: JSON Web Tokens (JWT)
 
-    Documentação da API: Swagger (OpenAPI)
+    Documentação da API: Swagger (OpenAPI) com swagger-ui-express e swagger-autogen
 
     Containerização: Docker
 
     Logger: Winston
+
+    Envio de E-mail: Nodemailer com Ethereal para testes
 
 🚀 Como Rodar o Projeto
 
 Siga os passos abaixo para configurar e executar o ambiente de desenvolvimento localmente.
 1. Pré-requisitos
 
-Antes de começar, garanta que você tenha as seguintes ferramentas instaladas em sua máquina:
+Antes de começar, garanta que você tenha as seguintes ferramentas instaladas na sua máquina:
 
     Node.js (versão 18.x ou superior)
 
@@ -33,72 +35,186 @@ Antes de começar, garanta que você tenha as seguintes ferramentas instaladas e
     Git
 
 2. Clonar o Repositório
-```
+
 git clone [https://github.com/klausmullerDev/vizinhanca-api.git](https://github.com/klausmullerDev/vizinhanca-api.git)
 cd vizinhanca-api
-```
 
 3. Instalar as Dependências
-```
+
+Execute o comando abaixo para instalar todas as dependências do projeto.
+
 npm install
-```
 
 4. Configurar Variáveis de Ambiente
 
-O projeto precisa de um arquivo .env para armazenar variáveis sensíveis. Crie uma cópia do arquivo de exemplo:
-```
-cp .env.example .env
-```
+O projeto precisa de um ficheiro .env para armazenar variáveis sensíveis. Crie uma cópia do ficheiro de exemplo:
 
-O arquivo .env.example deve conter as seguintes chaves. Certifique-se de que seu .env tenha a JWT_SECRET preenchida com um valor seguro e aleatório.
+cp .env.example .env
+
+O ficheiro .env.example contém as chaves necessárias. Certifique-se de que o seu .env tem a JWT_SECRET preenchida com um valor seguro e aleatório.
 
 # String de conexão com o banco de dados PostgreSQL
-```
 DATABASE_URL="postgresql://docker:docker@localhost:5432/meu_projeto?schema=public"
 
 # Chave secreta para assinar os tokens JWT
 JWT_SECRET="sua-chave-secreta-super-longa-e-aleatoria-aqui"
-```
 
 5. Iniciar o Banco de Dados com Docker
 
 Este comando irá iniciar o container do PostgreSQL em segundo plano.
-```
+
 docker-compose up -d
-```
 
 6. Aplicar as Migrations do Banco de Dados
 
-Com o banco de dados rodando, este comando irá criar todas as tabelas necessárias.
-```
+Com o banco de dados a rodar, este comando irá criar todas as tabelas e estruturas necessárias.
+
 npx prisma migrate dev
-```
 
 7. Iniciar a Aplicação
 
-Agora você pode iniciar o servidor de desenvolvimento.
-```
+Agora você pode iniciar o servidor de desenvolvimento. O servidor irá reiniciar automaticamente a cada alteração no código.
+
 npm run dev
-```
 
-    Dica: Para uma melhor experiência de desenvolvimento, use dois terminais: um para manter o banco de dados rodando (docker-compose up -d) e outro para rodar a aplicação (npm run dev), que reiniciará automaticamente a cada alteração no código.
-
-Após executar o último comando, a API estará rodando em http://localhost:3000.
+Após executar o último comando, a API estará a rodar em http://localhost:3000.
 📚 Documentação da API (Swagger)
 
 A documentação completa dos endpoints, incluindo modelos de dados e a possibilidade de testar as rotas, está disponível e é gerada automaticamente pelo Swagger.
 
     URL da Documentação: http://localhost:3000/api-docs
 
+    Nota Importante: Sempre que você adicionar ou alterar rotas nos ficheiros *.routes.ts, execute o comando npm run swagger-autogen para manter o ficheiro swagger-output.json atualizado.
+
 Endpoints Disponíveis
-```
-| Método | Rota | Descrição |
-| POST | /users/register | Cria uma nova conta de usuário. |
-| POST | /users/login | Autentica um usuário e retorna um token JWT. |
-| PATCH | /users/profile | (Exemplo) Atualiza o perfil do usuário logado. |
+Autenticação e Perfil
+
+Método
+	
+
+Rota
+	
+
+Descrição
+	
+
+Autenticação Necessária
+
+POST
+	
+
+/users/register
+	
+
+Cria uma nova conta de utilizador.
+	
+
+Não
+
+POST
+	
+
+/users/login
+	
+
+Autentica um utilizador e retorna um token JWT.
+	
+
+Não
+
+GET
+	
+
+/users/profile
+	
+
+Busca o perfil completo do utilizador logado.
+	
+
+Sim (Bearer Token)
+
+PUT
+	
+
+/users/profile
+	
+
+Atualiza o perfil do utilizador logado.
+	
+
+Sim (Bearer Token)
+
+POST
+	
+
+/users/forgot-password
+	
+
+Inicia o processo de redefinição de senha.
+	
+
+Não
+
+POST
+	
+
+/users/reset-password/:token
+	
+
+Redefine a senha utilizando um token válido.
+	
+
+Não
+Pedidos de Ajuda (Comunidade Fechada)
+
+Método
+	
+
+Rota
+	
+
+Descrição
+	
+
+Autenticação Necessária
+
+POST
+	
+
+/pedidos
+	
+
+Cria um novo pedido de ajuda.
+	
+
+Sim (Bearer Token)
+
+GET
+	
+
+/pedidos
+	
+
+Lista todos os pedidos de ajuda.
+	
+
+Sim (Bearer Token)
+
+GET
+	
+
+/pedidos/:id
+	
+
+Busca um pedido por ID.
+	
+
+Sim (Bearer Token)
 📜 Scripts NPM
-```
+
     npm run dev: Inicia o servidor em modo de desenvolvimento com ts-node-dev.
+
+    npm run swagger-autogen: Gera/atualiza o ficheiro swagger-output.json com base nas rotas.
 
     npm run build: Compila o código TypeScript para JavaScript (para produção).
 
