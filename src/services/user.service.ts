@@ -17,7 +17,7 @@ type UserProfileDTO = {
   name?: string;
   cpf?: string;
   telefone?: string;
-  dataDeNascimento?: Date;
+  dataDeNascimento?: Date | string;
   sexo?: string;
   endereco?: {
     rua: string;
@@ -109,10 +109,17 @@ class UserService {
   async updateProfile(userId: string, data: UserProfileDTO): Promise<UserPublic> {
     const { endereco, ...userData } = data;
 
+    const dataToUpdate: any = { ...userData };
+
+    if (dataToUpdate.dataDeNascimento && typeof dataToUpdate.dataDeNascimento === 'string') {
+      dataToUpdate.dataDeNascimento = new Date(dataToUpdate.dataDeNascimento);
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...userData,
+        
+        ...dataToUpdate,
         endereco: endereco ? {
           upsert: {
             create: endereco,
