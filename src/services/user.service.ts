@@ -1,17 +1,17 @@
 import { prisma } from '../database/prismaClient';
-import { User } from '@prisma/client';
+import { User, Pedido } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/mailer';
 
-export type UserPublic = Omit<User, 'password'>;
+export type UserPublic = Omit<User, 'password' | 'resetPasswordToken' | 'resetPasswordExpires'>;
 
 export type UserWithProfileStatus = UserPublic & {
   isProfileComplete: boolean;
   endereco: {} | null;
 };
 
-type UserCreateDTO = Omit<User, 'id' | 'createdAt'>;
+type UserCreateDTO = Omit<User, 'id' | 'createdAt' | 'resetPasswordToken' | 'resetPasswordExpires'>;
 
 type UserProfileDTO = {
   name?: string;
@@ -63,12 +63,41 @@ class UserService {
       !!userProfile.dataDeNascimento &&
       !!userProfile.endereco;
 
-    const { password, ...userPublic } = userProfile;
+    const { password, resetPasswordToken, resetPasswordExpires, ...userPublic } = userProfile;
 
     return {
       ...userPublic,
       isProfileComplete,
     };
+  }
+
+  async findById(userId: string): Promise<UserPublic> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        cpf: true,
+        telefone: true,
+        dataDeNascimento: true,
+        sexo: true,
+        createdAt: true,
+        endereco: true,
+      }
+    });
+    if (!user) {
+      throw new Error('Usuário não encontrado.');
+    }
+    return user;
+  }
+
+  async findPedidosByAuthor(authorId: string): Promise<Pedido[]> {
+    const pedidos = await prisma.pedido.findMany({
+      where: { authorId: authorId },
+      orderBy: { createdAt: 'desc' }
+    });
+    return pedidos;
   }
 
   async create(data: UserCreateDTO): Promise<UserPublic> {
@@ -118,7 +147,6 @@ class UserService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        
         ...dataToUpdate,
         endereco: endereco ? {
           upsert: {
@@ -141,7 +169,7 @@ class UserService {
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
-      const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hora
+      const resetTokenExpires = new Date(Date.now() + 3600000);
 
       await prisma.user.update({
         where: { email },
@@ -181,7 +209,17 @@ class UserService {
     const { password, ...userPublic } = updatedUser;
     return userPublic;
   }
+
+  async findAll(): Promise<UserPublic[]> {
+    const users = await prisma.user.findMany();
+    return users.map(({ password, ...userPublic }) => userPublic);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+  }
 }
 
 export default new UserService();
-

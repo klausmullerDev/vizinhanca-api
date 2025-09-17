@@ -25,7 +25,7 @@ class UserController {
             const userResponse = await UserService.login(email, password);
             const payload = { id: userResponse.id, email: userResponse.email };
             const secret = process.env.JWT_SECRET as string;
-            const options = { expiresIn: 86400 };
+            const options = { expiresIn: 86400 }; // 24 horas
             const token = jwt.sign(payload, secret, options);
             logger.info(`Utilizador logado com sucesso: ${email}`);
             return res.status(200).json({ user: userResponse, token });
@@ -69,13 +69,10 @@ class UserController {
         }
     }
 
-    // --- NOVOS MÉTODOS PARA REDEFINIÇÃO DE SENHA ---
-
     async forgotPassword(req: Request, res: Response) {
         try {
             const { email } = req.body;
             await UserService.forgotPassword(email);
-            // Por segurança, a resposta é sempre a mesma, existindo ou não o e-mail.
             return res.status(200).json({ message: 'Se um utilizador com este e-mail existir, um link para redefinição de senha foi enviado.' });
         } catch (error: any) {
             logger.error(`Erro no processo de forgotPassword: ${error.message}`);
@@ -97,11 +94,53 @@ class UserController {
 
         } catch (error: any) {
             logger.error(`Erro ao redefinir senha com token: ${error.message}`);
-            // Retorna o erro do serviço (ex: 'Token inválido ou expirado.')
             return res.status(400).json({ message: error.message });
+        }
+    }
+
+    async findById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const user = await UserService.findById(id);
+            return res.status(200).json(user);
+        } catch (error: any) {
+            logger.error(`Erro ao buscar utilizador por ID ${req.params.id}: ${error.message}`);
+            return res.status(404).json({ message: 'Utilizador não encontrado.' });
+        }
+    }
+
+    async findPedidosByAuthor(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const pedidos = await UserService.findPedidosByAuthor(id);
+            return res.status(200).json(pedidos);
+        } catch (error: any) {
+            logger.error(`Erro ao buscar pedidos do autor ${req.params.id}: ${error.message}`);
+            return res.status(500).json({ message: 'Erro ao buscar os pedidos do utilizador.' });
+        }
+    }
+
+    async findAll(req: Request, res: Response) {
+        try {
+            const users = await UserService.findAll();
+            return res.status(200).json(users);
+        } catch (error: any) {
+            logger.error(`Erro ao buscar todos os utilizadores: ${error.message}`);
+            return res.status(500).json({ message: 'Erro interno do servidor.' });
+        }
+    }
+
+    async delete(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            await UserService.deleteUser(id);
+            logger.info(`Utilizador ${id} deletado com sucesso.`);
+            return res.status(204).send();
+        } catch (error: any) {
+            logger.error(`Erro ao deletar utilizador ${req.params.id}: ${error.message}`);
+            return res.status(404).json({ message: 'Utilizador não encontrado.' });
         }
     }
 }
 
 export default new UserController();
-
