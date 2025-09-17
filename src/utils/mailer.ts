@@ -27,7 +27,7 @@ async function createTransporter() {
 export async function sendPasswordResetEmail(to: string, token: string) {
     const transporter = await createTransporter();
 
-    const resetUrl = `http://localhost:5173/reset-password/${token}`; // URL do seu front-end
+    const resetUrl = `http://localhost:5173/redefinir-senha/${token}`; // URL do seu front-end
 
     const info = await transporter.sendMail({
         from: '"Vizinhança Solidária" <no-reply@vizinhasolidaria.com>',
