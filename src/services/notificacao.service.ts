@@ -1,4 +1,5 @@
 import { prisma } from '../database/prismaClient';
+import logger from '../utils/logger';
 
 class NotificacaoService {
   async criar(data: {
@@ -7,6 +8,8 @@ class NotificacaoService {
     userId: string;
     pedidoId: string;
   }) {
+    logger.info(`Criando notificação tipo ${data.tipo} para usuário ${data.userId}`);
+
     const pedido = await prisma.pedido.findUnique({
       where: { id: data.pedidoId },
       select: { titulo: true }
@@ -14,33 +17,30 @@ class NotificacaoService {
 
     const mensagemFormatada = `${data.mensagem} Pedido: ${pedido?.titulo}`;
 
-    return prisma.notificacao.create({
+    const notificacao = await prisma.notificacao.create({
       data: {
         ...data,
-        mensagem: mensagemFormatada
+        mensagem: mensagemFormatada,
+        lida: false
       },
       include: {
         pedido: {
           select: {
             titulo: true,
             descricao: true
-          }
-        },
-        user: {
-          select: {
-            name: true,
-            avatar: true
           }
         }
       }
     });
+
+    logger.info(`Notificação ${notificacao.id} criada com sucesso`);
+    return notificacao;
   }
 
-  async buscarPorUsuario(userId: string) {
+  async listarPorUsuario(userId: string) {
     return prisma.notificacao.findMany({
-      where: {
-        userId,
-      },
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
       include: {
         pedido: {
           select: {
@@ -48,9 +48,6 @@ class NotificacaoService {
             descricao: true
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
     });
   }
@@ -60,8 +57,12 @@ class NotificacaoService {
       where: { id }
     });
 
-    if (!notificacao || notificacao.userId !== userId) {
-      throw new Error('Notificação não encontrada ou não autorizada');
+    if (!notificacao) {
+      throw new Error('Notificação não encontrada');
+    }
+
+    if (notificacao.userId !== userId) {
+      throw new Error('Não autorizado');
     }
 
     return prisma.notificacao.update({
@@ -71,12 +72,14 @@ class NotificacaoService {
   }
 
   async contarNaoLidas(userId: string) {
-    return prisma.notificacao.count({
+    const count = await prisma.notificacao.count({
       where: {
         userId,
         lida: false
       }
     });
+
+    return { quantidade: count };
   }
 }
 

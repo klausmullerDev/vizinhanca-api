@@ -6,7 +6,7 @@ class NotificacaoController {
   async listarPorUsuario(req: Request, res: Response) {
     try {
       const userId = req.user.id;
-      const notificacoes = await NotificacaoService.buscarPorUsuario(userId);
+      const notificacoes = await NotificacaoService.listarPorUsuario(userId);
       return res.json(notificacoes);
     } catch (error: any) {
       logger.error(`Erro ao buscar notificações: ${error.message}`);

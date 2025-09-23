@@ -98,7 +98,7 @@ model Interesse {
   pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 
   
-  @@unique([pedidoId, userId], name: "unique_interesse")
+  @@unique([pedidoId, userId])
   @@map("interesses")
 }
 

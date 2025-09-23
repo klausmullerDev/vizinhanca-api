@@ -137,6 +137,22 @@ class UserService {
   }
 
   async updateProfile(userId: string, data: UserProfileDTO): Promise<UserPublic> {
+    // Check if CPF is already in use by another user
+    if (data.cpf) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          cpf: data.cpf,
+          NOT: {
+            id: userId
+          }
+        }
+      });
+
+      if (existingUser) {
+        throw new Error('CPF já está em uso por outro usuário');
+      }
+    }
+
     const { endereco, ...userData } = data;
 
     const dataToUpdate: any = { ...userData };
