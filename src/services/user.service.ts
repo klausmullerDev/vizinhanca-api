@@ -140,9 +140,19 @@ class UserService {
 
     const dataToUpdate: any = { ...userData };
 
+    // --- Início da correção ---
+    // Verifica se a data de nascimento é uma string e tenta convertê-la.
+    // Adiciona uma verificação para garantir que o resultado seja uma data válida.
     if (dataToUpdate.dataDeNascimento && typeof dataToUpdate.dataDeNascimento === 'string') {
-      dataToUpdate.dataDeNascimento = new Date(dataToUpdate.dataDeNascimento);
+      const dateObject = new Date(dataToUpdate.dataDeNascimento);
+      if (!isNaN(dateObject.getTime())) { // Checa se a data é válida
+        dataToUpdate.dataDeNascimento = dateObject;
+      } else {
+        // Se a data for inválida, remove-a do objeto de atualização
+        delete dataToUpdate.dataDeNascimento;
+      }
     }
+    // --- Fim da correção ---
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
