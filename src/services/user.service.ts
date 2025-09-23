@@ -37,6 +37,19 @@ export class AuthenticationError extends Error {
   }
 }
 
+const userPublicSelect = {
+  id: true,
+  name: true,
+  email: true,
+  avatar: true,
+  cpf: true,
+  telefone: true,
+  dataDeNascimento: true,
+  sexo: true,
+  createdAt: true,
+  endereco: true,
+} as const;
+
 class UserService {
 
   private async findByEmail(email: string): Promise<User | null> {
@@ -46,49 +59,37 @@ class UserService {
   }
 
   async getProfile(userId: string): Promise<UserWithProfileStatus> {
-    const userProfile = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        endereco: true,
-      },
+      select: userPublicSelect
     });
 
-    if (!userProfile) {
-      throw new Error('Utilizador não encontrado.');
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    const isProfileComplete =
-      !!userProfile.cpf &&
-      !!userProfile.telefone &&
-      !!userProfile.dataDeNascimento &&
-      !!userProfile.endereco;
-
-    const { password, resetPasswordToken, resetPasswordExpires, ...userPublic } = userProfile;
+    const isProfileComplete = Boolean(
+      user.cpf &&
+      user.telefone &&
+      user.endereco
+    );
 
     return {
-      ...userPublic,
-      isProfileComplete,
+      ...user,
+      isProfileComplete
     };
   }
 
   async findById(userId: string): Promise<UserPublic> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        cpf: true,
-        telefone: true,
-        dataDeNascimento: true,
-        sexo: true,
-        createdAt: true,
-        endereco: true,
-      }
+      select: userPublicSelect
     });
+
     if (!user) {
-      throw new Error('Usuário não encontrado.');
+      throw new Error('User not found');
     }
+
     return user;
   }
 

@@ -18,21 +18,21 @@ model User {
   name             String
   email            String    @unique
   password         String
+  avatar           String?   // Campo já existe para foto de perfil
   cpf              String?   @unique
   telefone         String?
   dataDeNascimento DateTime?
   sexo             String?
   createdAt        DateTime  @default(now())
 
-  
   resetPasswordToken   String?   @unique
   resetPasswordExpires DateTime?
 
-  
-  endereco   Endereco?
-  pedidos    Pedido[]
-  interesses Interesse[]
-  avaliacoes Avaliacao[]
+  endereco     Endereco?
+  pedidos      Pedido[]
+  interesses   Interesse[]
+  avaliacoes   Avaliacao[]
+  notificacoes Notificacao[] // Nova relação
 
   @@map("users")
 }
@@ -55,16 +55,35 @@ model Endereco {
 }
 
 model Pedido {
-  id        String   @id @default(uuid())
-  titulo    String
-  descricao String
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  titulo      String
+  descricao   String
+  imagem      String?  // Novo campo para foto opcional do pedido
+  createdAt   DateTime @default(now())
+  status      String   @default("ABERTO") // ABERTO, FINALIZADO, CANCELADO
 
-  authorId   String
-  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  interesses Interesse[]
+  authorId     String
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  interesses   Interesse[]
+  notificacoes Notificacao[] // Nova relação
 
   @@map("pedidos")
+}
+
+// Nova model para notificações
+model Notificacao {
+  id        String   @id @default(uuid())
+  tipo      String   // INTERESSE_RECEBIDO, PEDIDO_ACEITO, etc
+  mensagem  String
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pedidoId String
+  pedido   Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@map("notificacoes")
 }
 
 model Interesse {

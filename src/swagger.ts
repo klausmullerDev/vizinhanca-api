@@ -6,7 +6,7 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'API Vizinhança Solidária',
       version: '1.0.0',
-      description: 'Documentação da API para o projeto Vizinhança Solidária. Utilize o botão "Authorize" e insira o seu token JWT no formato "Bearer {seu_token}" para testar os endpoints protegidos.',
+      description: 'API para conectar vizinhos que precisam de ajuda com aqueles que podem ajudar.',
     },
     servers: [
       {
@@ -16,183 +16,405 @@ const options: swaggerJsdoc.Options = {
     ],
     components: {
       schemas: {
-        // --- Schemas de Utilizador ---
+        // User schemas
         User: {
           type: 'object',
-          properties: { id: { type: 'string' }, name: { type: 'string' }, email: { type: 'string' }, createdAt: { type: 'string' } },
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            avatar: { type: 'string', nullable: true },
+            cpf: { type: 'string', nullable: true },
+            telefone: { type: 'string', nullable: true },
+            dataDeNascimento: { type: 'string', format: 'date-time', nullable: true },
+            sexo: { type: 'string', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            endereco: { $ref: '#/components/schemas/Endereco' }
+          }
         },
         UserRegister: {
           type: 'object',
           required: ['name', 'email', 'password'],
-          properties: { name: { type: 'string' }, email: { type: 'string' }, password: { type: 'string' } },
-        },
-        LoginSuccessResponse: {
-          type: 'object',
-          properties: { user: { $ref: '#/components/schemas/User' }, token: { type: 'string' } },
-        },
-        UserProfile: {
-          type: 'object',
           properties: {
-            id: { type: 'string', format: 'uuid' }, name: { type: 'string' }, email: { type: 'string', format: 'email' }, cpf: { type: 'string', nullable: true }, telefone: { type: 'string', nullable: true }, dataDeNascimento: { type: 'string', format: 'date-time', nullable: true }, sexo: { type: 'string', nullable: true }, createdAt: { type: 'string', format: 'date-time' }, isProfileComplete: { type: 'boolean' }, endereco: { type: 'object', nullable: true, properties: { rua: { type: 'string' }, numero: { type: 'string' }, bairro: { type: 'string' }, cidade: { type: 'string' }, estado: { type: 'string' }, cep: { type: 'string' } } }
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            password: { type: 'string' },
+            cpf: { type: 'string' },
+            telefone: { type: 'string' }
           }
         },
-        UpdateProfileRequest: {
+        LoginResponse: {
           type: 'object',
           properties: {
-            cpf: { type: 'string' }, telefone: { type: 'string' }, dataDeNascimento: { type: 'string', format: 'date-time' }, sexo: { type: 'string' }, endereco: { type: 'object', properties: { rua: { type: 'string' }, numero: { type: 'string' }, bairro: { type: 'string' }, cidade: { type: 'string' }, estado: { type: 'string' }, cep: { type: 'string' } } }
+            user: { $ref: '#/components/schemas/User' },
+            token: { type: 'string' }
           }
         },
-        // --- Schemas para Redefinição de Senha ---
-        ForgotPasswordRequest: {
-          type: 'object',
-          required: ['email'],
-          properties: {
-            email: { type: 'string', format: 'email', example: 'utilizador@exemplo.com' }
-          }
-        },
-        ResetPasswordRequest: {
-          type: 'object',
-          required: ['password'],
-          properties: {
-            password: { type: 'string', example: 'novaSenhaSuperSegura123' }
-          }
-        },
-        SuccessResponse: {
+        Endereco: {
           type: 'object',
           properties: {
-            message: { type: 'string' }
+            rua: { type: 'string' },
+            numero: { type: 'string' },
+            complemento: { type: 'string', nullable: true },
+            bairro: { type: 'string' },
+            cidade: { type: 'string' },
+            estado: { type: 'string' },
+            cep: { type: 'string' }
           }
         },
-        // --- Schemas para Pedidos ---
         Pedido: {
           type: 'object',
           properties: {
-            id: { type: 'string', format: 'uuid' }, titulo: { type: 'string' }, descricao: { type: 'string' }, createdAt: { type: 'string', format: 'date-time' }, author: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } }
+            id: { type: 'string', format: 'uuid' },
+            titulo: { type: 'string' },
+            descricao: { type: 'string' },
+            imagem: { type: 'string', nullable: true },
+            status: { type: 'string', enum: ['ABERTO', 'FINALIZADO', 'CANCELADO'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            author: { $ref: '#/components/schemas/User' }
           }
         },
-        CreatePedidoRequest: {
+        Notificacao: {
           type: 'object',
-          required: ['titulo', 'descricao'],
           properties: {
-            titulo: { type: 'string', example: 'Preciso de ajuda com compras' },
-            descricao: { type: 'string', example: 'Sou do grupo de risco e preciso que alguém me ajude a ir ao supermercado esta semana.' },
+            id: { type: 'string', format: 'uuid' },
+            tipo: { type: 'string', enum: ['INTERESSE_RECEBIDO', 'PEDIDO_ACEITO'] },
+            mensagem: { type: 'string' },
+            lida: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            pedido: { $ref: '#/components/schemas/Pedido' }
           }
-        },
+        }
       },
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
+          bearerFormat: 'JWT'
+        }
+      }
     },
     paths: {
-      // --- Endpoints de Autenticação e Perfil ---
       '/users/register': {
         post: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Registra um novo utilizador',
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/UserRegister' } } } },
-          responses: { '201': { description: 'Utilizador criado', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } }, '409': { description: 'Email já em uso' }, '400': { description: 'Dados inválidos' } },
-        },
+          tags: ['Usuários'],
+          summary: 'Registra um novo usuário',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UserRegister' }
+              }
+            }
+          },
+          responses: {
+            '201': {
+              description: 'Usuário criado com sucesso',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/User' }
+                }
+              }
+            },
+            '400': { description: 'Dados inválidos' },
+            '409': { description: 'Email já existe' }
+          }
+        }
       },
       '/users/login': {
         post: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Autentica um utilizador e retorna um token JWT',
-          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string' }, password: { type: 'string' } } } } } },
-          responses: { '200': { description: 'Login bem-sucedido', content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginSuccessResponse' } } } }, '401': { description: 'Credenciais inválidas' } },
-        },
+          tags: ['Usuários'],
+          summary: 'Realiza login do usuário',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email', 'password'],
+                  properties: {
+                    email: { type: 'string', format: 'email' },
+                    password: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': {
+              description: 'Login realizado com sucesso',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/LoginResponse' }
+                }
+              }
+            },
+            '401': { description: 'Credenciais inválidas' }
+          }
+        }
       },
       '/users/profile': {
         get: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Busca o perfil completo do utilizador autenticado',
+          tags: ['Usuários'],
+          summary: 'Retorna o perfil do usuário logado',
           security: [{ bearerAuth: [] }],
-          responses: { '200': { description: 'Perfil do utilizador', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserProfile' } } } }, '401': { description: 'Não autorizado' }, '404': { description: 'Utilizador não encontrado' } }
+          responses: {
+            '200': {
+              description: 'Perfil do usuário',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/User' }
+                }
+              }
+            },
+            '401': { description: 'Não autorizado' }
+          }
         },
         put: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Atualiza o perfil do utilizador autenticado',
+          tags: ['Usuários'],
+          summary: 'Atualiza o perfil do usuário',
           security: [{ bearerAuth: [] }],
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateProfileRequest' } } } },
-          responses: { '200': { description: 'Perfil atualizado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } }, '400': { description: 'Dados inválidos' }, '401': { description: 'Não autorizado' } }
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    avatar: { type: 'string', format: 'binary' },
+                    cpf: { type: 'string' },
+                    telefone: { type: 'string' },
+                    dataDeNascimento: { type: 'string', format: 'date-time' },
+                    sexo: { type: 'string' },
+                    endereco: { $ref: '#/components/schemas/Endereco' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': {
+              description: 'Perfil atualizado com sucesso',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/User' }
+                }
+              }
+            },
+            '400': { description: 'Dados inválidos' },
+            '401': { description: 'Não autorizado' }
+          }
         }
       },
-      // --- NOVOS ENDPOINTS PARA REDEFINIÇÃO DE SENHA ---
       '/users/forgot-password': {
         post: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Inicia o processo de redefinição de senha',
-          description: 'Envia um e-mail com um link de redefinição para o utilizador, se o e-mail existir no sistema.',
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ForgotPasswordRequest' } } } },
+          tags: ['Usuários'],
+          summary: 'Solicita redefinição de senha',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['email'],
+                  properties: {
+                    email: { type: 'string', format: 'email' }
+                  }
+                }
+              }
+            }
+          },
           responses: {
-            '200': { description: 'Resposta de sucesso genérica por razões de segurança.', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } }
+            '200': { description: 'Email de redefinição enviado' },
+            '404': { description: 'Email não encontrado' }
           }
         }
       },
       '/users/reset-password/{token}': {
         post: {
-          tags: ['Autenticação e Perfil'],
-          summary: 'Redefine a senha utilizando um token válido',
+          tags: ['Usuários'],
+          summary: 'Redefine a senha usando token',
           parameters: [
             {
               in: 'path',
               name: 'token',
               required: true,
-              schema: { type: 'string' },
-              description: 'O token de redefinição recebido por e-mail.'
+              schema: { type: 'string' }
             }
           ],
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ResetPasswordRequest' } } } },
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['password'],
+                  properties: {
+                    password: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
           responses: {
-            '200': { description: 'Senha redefinida com sucesso.', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } },
-            '400': { description: 'Token inválido ou expirado, ou nova senha não fornecida.' }
+            '200': { description: 'Senha redefinida com sucesso' },
+            '400': { description: 'Token inválido ou expirado' }
           }
         }
       },
-      // --- Endpoints de Pedidos ---
       '/pedidos': {
         get: {
           tags: ['Pedidos'],
-          summary: 'Lista todos os pedidos de ajuda',
+          summary: 'Lista todos os pedidos',
           security: [{ bearerAuth: [] }],
-          responses: { '200': { description: 'Lista de pedidos', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pedido' } } } } }, '401': { description: 'Não autorizado' } },
+          responses: {
+            '200': {
+              description: 'Lista de pedidos',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/Pedido' }
+                  }
+                }
+              }
+            }
+          }
         },
         post: {
           tags: ['Pedidos'],
-          summary: 'Cria um novo pedido de ajuda',
+          summary: 'Cria um novo pedido',
           security: [{ bearerAuth: [] }],
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePedidoRequest' } } } },
-          responses: { '201': { description: 'Pedido criado com sucesso', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } }, '400': { description: 'Dados inválidos' }, '401': { description: 'Não autorizado' } },
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    titulo: { type: 'string' },
+                    descricao: { type: 'string' },
+                    imagem: { type: 'string', format: 'binary' }
+                  },
+                  required: ['titulo', 'descricao']
+                }
+              }
+            }
+          },
+          responses: {
+            '201': {
+              description: 'Pedido criado',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Pedido' }
+                }
+              }
+            }
+          }
         }
       },
-      // --- NOVO ENDPOINT DE INTERESSE ---
-      '/pedidos/{id}/interesse': {
-        post: {
-          tags: ['Pedidos'],
-          summary: 'Manifesta interesse em ajudar em um pedido específico',
+      '/notificacoes': {
+        get: {
+          tags: ['Notificações'],
+          summary: 'Lista notificações do usuário',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: 'Lista de notificações',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/Notificacao' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/notificacoes/nao-lidas/quantidade': {
+        get: {
+          tags: ['Notificações'],
+          summary: 'Retorna quantidade de notificações não lidas',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: 'Quantidade de notificações não lidas',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      quantidade: { type: 'number' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/notificacoes/{id}/lida': {
+        patch: {
+          tags: ['Notificações'],
+          summary: 'Marca notificação como lida',
           security: [{ bearerAuth: [] }],
           parameters: [
             {
               in: 'path',
               name: 'id',
               required: true,
-              schema: { type: 'string', format: 'uuid' },
-              description: 'O ID do pedido no qual o utilizador quer manifestar interesse.'
+              schema: { type: 'string', format: 'uuid' }
             }
           ],
           responses: {
-            '201': { description: 'Interesse registado com sucesso.', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } },
-            '400': { description: 'Pedido não encontrado, ou o utilizador já manifestou interesse, ou está a tentar manifestar interesse no seu próprio pedido.' },
-            '401': { description: 'Não autorizado.' }
+            '204': { description: 'Notificação marcada como lida' }
+          }
+        }
+      },
+      '/pedidos/{id}/interesse': {
+        post: {
+          tags: ['Pedidos'],
+          summary: 'Manifesta interesse em um pedido',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: 'path',
+              name: 'id',
+              required: true,
+              schema: { type: 'string', format: 'uuid' }
+            }
+          ],
+          responses: {
+            '200': {
+              description: 'Interesse registrado',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      pedido: { $ref: '#/components/schemas/Pedido' },
+                      interesse: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          userId: { type: 'string', format: 'uuid' },
+                          pedidoId: { type: 'string', format: 'uuid' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
-    },
+    }
   },
-  apis: [],
+  apis: ['./src/routes/*.ts']
 };
 
 const swaggerSpec = swaggerJsdoc(options);

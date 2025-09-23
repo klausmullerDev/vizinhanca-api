@@ -4,6 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger';
 import userRouter from './routes/user.routes';
 import pedidoRouter from './routes/pedido.routes';
+import notificacaoRouter from './routes/notificacao.routes';
 import logger from './utils/logger';
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(cors());
 
 app.use('/users', userRouter); 
 app.use('/pedidos', pedidoRouter); 
+app.use('/notificacoes', notificacaoRouter); 
 
 
 
