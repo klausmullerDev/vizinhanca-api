@@ -6,6 +6,7 @@ class NotificacaoService {
     tipo: 'INTERESSE_RECEBIDO' | 'PEDIDO_ACEITO';
     mensagem: string;
     userId: string;
+    remetenteId?: string;
     pedidoId: string;
   }) {
     logger.info(`Criando notificação tipo ${data.tipo} para usuário ${data.userId}`);
@@ -41,6 +42,9 @@ class NotificacaoService {
             titulo: true,
             descricao: true
           }
+        },
+        remetente: {
+          select: { id: true, name: true, avatar: true }
         }
       }
     });

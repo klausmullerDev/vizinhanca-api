@@ -124,6 +124,7 @@ class PedidoService {
             tipo: 'INTERESSE_RECEBIDO',
             mensagem: `${interessado?.name} demonstrou interesse no seu pedido "${pedido.titulo}".`,
             pedidoId: pedidoId,
+            remetenteId: userId,
         });
 
         return { pedido, interesse };

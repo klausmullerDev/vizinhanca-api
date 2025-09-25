@@ -82,7 +82,14 @@ const options: swaggerJsdoc.Options = {
             mensagem: { type: 'string' },
             lida: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
-            pedido: { $ref: '#/components/schemas/Pedido' }
+            pedido: { $ref: '#/components/schemas/Pedido' },
+            remetente: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                id: { type: 'string', format: 'uuid' }, name: { type: 'string' }, avatar: { type: 'string', nullable: true }
+              }
+            }
           }
         }
       },

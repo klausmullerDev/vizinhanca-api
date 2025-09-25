@@ -32,7 +32,9 @@ model User {
   pedidos      Pedido[]
   interesses   Interesse[]
   avaliacoes   Avaliacao[]
-  notificacoes Notificacao[] // Nova relação
+
+  notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
+  notificacoesEnviadas  Notificacao[] @relation("NotificacoesEnviadas")
 
   @@map("users")
 }
@@ -78,8 +80,14 @@ model Notificacao {
   lida      Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  // Para quem é a notificação
   userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User    @relation("NotificacoesRecebidas", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Quem enviou a notificação (opcional)
+  remetenteId String?
+  remetente   User?   @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id], onDelete: SetNull)
+
   pedidoId String
   pedido   Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 
@@ -116,4 +124,3 @@ model Categoria {
 
   @@map("categorias")
 }
-
