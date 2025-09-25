@@ -25,24 +25,36 @@ class PedidoService {
         return pedido;
     }
 
-    async findAll(userId?: string): Promise<any[]> {
+    async findAll(userId?: string, search?: string): Promise<any[]> {
+        const whereClause: any = {};
+
+        if (search) {
+            whereClause.OR = [
+                { titulo: { contains: search, mode: 'insensitive' } },
+                { descricao: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
         const pedidos = await prisma.pedido.findMany({
+            where: whereClause,
             orderBy: { createdAt: 'desc' },
             include: {
                 author: { select: { id: true, name: true, avatar: true } },
                 interesses: { select: { userId: true } },
             },
         });
-
-        // Se um userId for fornecido, mapeia os pedidos para incluir a flag de interesse
-        if (userId) {
-            return pedidos.map(pedido => {
-                const usuarioJaDemonstrouInteresse = pedido.interesses.some(interesse => interesse.userId === userId);
-                return { ...pedido, usuarioJaDemonstrouInteresse };
-            });
-        }
-
-        return pedidos;
+        
+        return pedidos.map(pedido => {
+            const { interesses, ...rest } = pedido;
+            const interessadosCount = interesses.length;
+            
+            const usuarioJaDemonstrouInteresse = userId 
+                ? interesses.some(interesse => interesse.userId === userId)
+                : false;
+            
+            // Remove a lista de interesses para limpar a resposta
+            return { ...rest, usuarioJaDemonstrouInteresse, interessadosCount };
+        });
     }
 
     async findById(id: string, userId?: string): Promise<any | null> {
