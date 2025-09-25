@@ -1,205 +1,100 @@
-// services/pedido.service.ts
-
 import { prisma } from '../database/prismaClient';
-import notificacaoService from './notificacao.service';
-import logger from '../utils/logger';
-import { PedidoCreateDTO, PedidoUpdateDTO } from '../types/dtos/pedido.dto';
+import { Pedido } from '@prisma/client';
+import NotificacaoService from './notificacao.service';
+
+type PedidoCreateDTO = {
+    titulo: string;
+    descricao: string;
+    imagem?: string; // O campo imagem é opcional
+};
+
+type PedidoUpdateDTO = {
+    titulo?: string;
+    descricao?: string;
+    status?: string;
+};
 
 class PedidoService {
-  async create(data: PedidoCreateDTO) {
-    return prisma.pedido.create({
-      data,
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            telefone: true
-          }
+    async create(authorId: string, data: PedidoCreateDTO): Promise<Pedido> {
+        const pedido = await prisma.pedido.create({
+            data: {
+                ...data,
+                authorId: authorId,
+            },
+        });
+        return pedido;
+    }
+
+    async findAll(): Promise<any[]> {
+        return prisma.pedido.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                author: { select: { id: true, name: true, avatar: true } },
+                interesses: { select: { userId: true } },
+            },
+        });
+    }
+
+    async findById(id: string): Promise<Pedido | null> {
+        const pedido = await prisma.pedido.findUnique({
+            where: { id },
+            include: {
+                author: { select: { id: true, name: true, avatar: true } },
+                interesses: { include: { user: { select: { id: true, name: true, avatar: true } } } },
+            },
+        });
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
         }
-      }
-    });
-  }
+        return pedido;
+    }
 
-  async findAll(userId: string) {
-    return prisma.pedido.findMany({
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true
-          }
-        },
-        interesses: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatar: true
-              }
-            }
-          }
+    async update(id: string, data: PedidoUpdateDTO): Promise<Pedido> {
+        return prisma.pedido.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async delete(id: string, userId: string): Promise<void> {
+        const pedido = await prisma.pedido.findUnique({ where: { id } });
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-  }
-
-  async findById(id: string, userId: string | null) {
-    const pedido = await prisma.pedido.findUnique({
-      where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true
-          }
-        },
-        interesses: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatar: true
-              }
-            }
-          }
+        if (pedido.authorId !== userId) {
+            throw new Error('Acesso negado');
         }
-      }
-    });
-
-    if (!pedido) {
-      throw new Error('Pedido não encontrado');
+        await prisma.pedido.delete({ where: { id } });
     }
 
-    return pedido;
-  }
-
-  async update(id: string, userId: string, data: PedidoUpdateDTO) {
-    const pedido = await prisma.pedido.findUnique({
-      where: { id }
-    });
-
-    if (!pedido) {
-      throw new Error('Pedido não encontrado');
-    }
-
-    if (pedido.authorId !== userId) {
-      throw new Error('Não autorizado');
-    }
-
-    return prisma.pedido.update({
-      where: { id },
-      data,
-      include: {
-        author: true,
-        interesses: true
-      }
-    });
-  }
-
-  async delete(id: string, userId: string) {
-    const pedido = await prisma.pedido.findUnique({
-      where: { id }
-    });
-
-    if (!pedido) {
-      throw new Error('Pedido não encontrado');
-    }
-
-    if (pedido.authorId !== userId) {
-      throw new Error('Não autorizado');
-    }
-
-    await prisma.pedido.delete({
-      where: { id }
-    });
-  }
-
-  async manifestarInteresse(pedidoId: string, userId: string) {
-    const pedido = await prisma.pedido.findUnique({
-      where: { id: pedidoId },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            telefone: true
-          }
+    async addInteresse(pedidoId: string, userId: string) {
+        const pedido = await this.findById(pedidoId);
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
         }
-      }
-    });
-
-    if (!pedido) {
-      throw new Error('Pedido não encontrado');
-    }
-
-    // Buscar dados do usuário interessado
-    const interessadoUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true }
-    });
-
-    if (!interessadoUser) {
-      throw new Error('Usuário não encontrado');
-    }
-
-    if (pedido.author.id === userId) {
-      throw new Error('Não é possível manifestar interesse no próprio pedido');
-    }
-
-    // Verificar se já existe interesse
-    const existingInteresse = await prisma.interesse.findFirst({
-      where: {
-        pedidoId,
-        userId
-      }
-    });
-
-    if (existingInteresse) {
-      throw new Error('Você já manifestou interesse neste pedido');
-    }
-
-    // Criar interesse em uma transação com a notificação
-    const result = await prisma.$transaction(async (tx) => {
-      const interesse = await tx.interesse.create({
-        data: {
-          userId,
-          pedidoId
+        if (pedido.authorId === userId) {
+            throw new Error('Você não pode demonstrar interesse no seu próprio pedido.');
         }
-      });
 
-      const notificacao = await tx.notificacao.create({
-        data: {
-          tipo: 'INTERESSE_RECEBIDO',
-          mensagem: `${interessadoUser.name} demonstrou interesse em ajudar no seu pedido "${pedido.titulo}"`,
-          userId: pedido.author.id,
-          pedidoId,
-          lida: false
-        }
-      });
+        const interesse = await prisma.interesse.create({
+            data: {
+                pedidoId,
+                userId,
+            },
+        });
 
-      return { interesse, notificacao };
-    });
+        // Criar notificação para o autor do pedido
+        const autorDoPedidoId = pedido.authorId;
+        const interessado = await prisma.user.findUnique({ where: { id: userId } });
+        await NotificacaoService.criar({
+            userId: autorDoPedidoId,
+            tipo: 'INTERESSE_RECEBIDO',
+            mensagem: `${interessado?.name} demonstrou interesse no seu pedido "${pedido.titulo}".`,
+            pedidoId: pedidoId,
+        });
 
-    logger.info(`Interesse registrado: usuário ${interessadoUser.name} no pedido ${pedido.titulo}`);
-    logger.info(`Notificação ${result.notificacao.id} criada para o usuário ${pedido.author.id}`);
-
-    return { 
-      pedido,
-      interesse: result.interesse
-    };
-  }
+        return { pedido, interesse };
+    }
 }
 
 export default new PedidoService();

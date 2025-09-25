@@ -1,19 +1,21 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth.middleware';
 import PedidoController from '../controllers/pedido.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import { uploadConfig as upload } from '../services/upload.service';
 
 const pedidoRouter = Router();
 
-// Rotas para a coleção de pedidos (/pedidos)
-pedidoRouter.get('/', authMiddleware, PedidoController.findAll);
-pedidoRouter.post('/', authMiddleware, PedidoController.create);
+// Aplica o middleware de autenticação para todas as rotas de pedido
+pedidoRouter.use(authMiddleware);
 
-// Rotas para um pedido específico (/pedidos/:id)
-pedidoRouter.get('/:id', authMiddleware, PedidoController.findById);
-pedidoRouter.patch('/:id', authMiddleware, PedidoController.update);
-pedidoRouter.delete('/:id', authMiddleware, PedidoController.delete);
+// A rota de criação agora usa o multer para aceitar uma imagem no campo 'imagem'
+pedidoRouter.post('/', upload.single('imagem'), PedidoController.create);
 
-// Rota para ações customizadas em um pedido específico
-pedidoRouter.post('/:id/interesse', authMiddleware, PedidoController.manifestarInteresse);
+pedidoRouter.get('/', PedidoController.findAll);
+pedidoRouter.get('/:id', PedidoController.findById);
+pedidoRouter.patch('/:id', PedidoController.update);
+pedidoRouter.delete('/:id', PedidoController.delete);
+
+pedidoRouter.post('/:id/interesse', PedidoController.addInteresse);
 
 export default pedidoRouter;
