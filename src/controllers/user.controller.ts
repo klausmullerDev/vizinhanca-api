@@ -59,7 +59,14 @@ class UserController {
                 return res.status(401).json({ message: 'Utilizador não autenticado.' });
             }
             const userId = req.user.id;
-            const profileData = req.body;
+            const profileData = { ...req.body };
+
+            // Adiciona o caminho do avatar se um arquivo foi enviado
+            if (req.file) {
+                // Normaliza o caminho do arquivo para usar barras '/' e ser compatível com URLs
+                profileData.avatar = `/${req.file.path.replace(/\\/g, '/')}`; // Garante a barra inicial
+            }
+
             const updatedUser = await UserService.updateProfile(userId, profileData);
             logger.info(`Perfil do utilizador ${userId} atualizado com sucesso.`);
             return res.status(200).json(updatedUser);

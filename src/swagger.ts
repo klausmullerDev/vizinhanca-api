@@ -153,6 +153,19 @@ const options: swaggerJsdoc.Options = {
           }
         }
       },
+      '/users': {
+        get: {
+          tags: ['Usuários'],
+          summary: 'Lista todos os usuários',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: 'Lista de usuários',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/User' } } } }
+            }
+          }
+        }
+      },
       '/users/profile': {
         get: {
           tags: ['Usuários'],
@@ -179,16 +192,22 @@ const options: swaggerJsdoc.Options = {
             content: {
               'multipart/form-data': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    avatar: { type: 'string', format: 'binary' },
-                    cpf: { type: 'string' },
-                    telefone: { type: 'string' },
-                    dataDeNascimento: { type: 'string', format: 'date-time' },
-                    sexo: { type: 'string' },
-                    endereco: { $ref: '#/components/schemas/Endereco' }
-                  }
+                  type: 'object', 
+                  properties: { 
+                    name: { type: 'string' }, 
+                    cpf: { type: 'string' }, 
+                    telefone: { type: 'string' }, 
+                    dataDeNascimento: { type: 'string', format: 'date' }, 
+                    sexo: { type: 'string' }, 
+                    'endereco[rua]': { type: 'string' },
+                    'endereco[numero]': { type: 'string' },
+                    'endereco[complemento]': { type: 'string' },
+                    'endereco[bairro]': { type: 'string' },
+                    'endereco[cidade]': { type: 'string' },
+                    'endereco[estado]': { type: 'string' },
+                    'endereco[cep]': { type: 'string' },
+                    avatar: { type: 'string', format: 'binary' } 
+                  } 
                 }
               }
             }
@@ -204,6 +223,43 @@ const options: swaggerJsdoc.Options = {
             },
             '400': { description: 'Dados inválidos' },
             '401': { description: 'Não autorizado' }
+          }
+        }
+      },
+      '/users/{id}': {
+        get: {
+          tags: ['Usuários'],
+          summary: 'Busca um usuário por ID',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            '200': {
+              description: 'Dados do usuário',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } }
+            },
+            '404': { description: 'Usuário não encontrado' }
+          }
+        },
+        delete: {
+          tags: ['Usuários (Admin)'],
+          summary: 'Deleta um usuário por ID',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            '204': { description: 'Usuário deletado com sucesso' },
+            '404': { description: 'Usuário não encontrado' }
+          }
+        }
+      },
+      '/users/{id}/pedidos': {
+        get: {
+          tags: ['Usuários'],
+          summary: 'Busca todos os pedidos de um usuário',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            '200': { description: 'Lista de pedidos do usuário', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pedido' } } } } },
+            '404': { description: 'Usuário não encontrado' }
           }
         }
       },
@@ -264,24 +320,6 @@ const options: swaggerJsdoc.Options = {
         }
       },
       '/pedidos': {
-        get: {
-          tags: ['Pedidos'],
-          summary: 'Lista todos os pedidos',
-          security: [{ bearerAuth: [] }],
-          responses: {
-            '200': {
-              description: 'Lista de pedidos',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'array',
-                    items: { $ref: '#/components/schemas/Pedido' }
-                  }
-                }
-              }
-            }
-          }
-        },
         post: {
           tags: ['Pedidos'],
           summary: 'Cria um novo pedido',
@@ -302,15 +340,64 @@ const options: swaggerJsdoc.Options = {
               }
             }
           },
+          responses: { '201': { description: 'Pedido criado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } } }
+        },
+        get: {
+          tags: ['Pedidos'],
+          summary: 'Lista todos os pedidos',
+          security: [{ bearerAuth: [] }],
           responses: {
-            '201': {
-              description: 'Pedido criado',
+            '200': {
+              description: 'Lista de pedidos',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/Pedido' }
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/Pedido' }
+                  }
                 }
               }
             }
+          },
+        }
+      },
+      '/pedidos/{id}': {
+        get: {
+          tags: ['Pedidos'],
+          summary: 'Busca um pedido por ID',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            '200': { description: 'Dados do pedido', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } },
+            '404': { description: 'Pedido não encontrado' }
+          }
+        },
+        patch: {
+          tags: ['Pedidos'],
+          summary: 'Atualiza um pedido',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: { type: 'object', properties: { titulo: { type: 'string' }, descricao: { type: 'string' }, status: { type: 'string' } } }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Pedido atualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Pedido' } } } }
+          }
+        },
+        delete: {
+          tags: ['Pedidos'],
+          summary: 'Deleta um pedido',
+          description: 'Permite que o autor do pedido o delete.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          responses: {
+            '204': { description: 'Pedido deletado com sucesso' },
+            '403': { description: 'Acesso negado' },
+            '404': { description: 'Pedido não encontrado' }
           }
         }
       },

@@ -91,6 +91,24 @@ if [ -z "$USER2_TOKEN" ] || [ "$USER2_TOKEN" = "null" ]; then
 fi
 echo "User 2 logged in successfully"
 
+# # Create a dummy image file for profile picture upload test
+# echo -e "\n${GREEN}3. Preparing for profile picture upload...${NC}"
+# DUMMY_IMAGE_NAME="test_avatar.jpg"
+# echo "dummy" > $DUMMY_IMAGE_NAME
+# echo "Dummy image file created: $DUMMY_IMAGE_NAME"
+
+# # User 1 updates profile with a picture
+# echo -e "\n${GREEN}4. Updating user 1 profile with avatar...${NC}"
+# UPDATE_PROFILE_RESPONSE=$(curl -s -X PUT "$BASE_URL/users/profile" \
+#   -H "Authorization: Bearer $USER1_TOKEN" \
+#   -F "name=Test User 1 Updated" \
+#   -F "avatar=@$DUMMY_IMAGE_NAME")
+
+# check_response "$UPDATE_PROFILE_RESPONSE"
+# echo "User 1 profile updated successfully."
+# echo "$UPDATE_PROFILE_RESPONSE" | jq '.' || echo "$UPDATE_PROFILE_RESPONSE"
+# rm $DUMMY_IMAGE_NAME # Clean up dummy file
+
 # Create a pedido with first user
 echo -e "\n${GREEN}3. Creating pedido...${NC}"
 PEDIDO_RESPONSE=$(curl -s -X POST "$BASE_URL/pedidos" \
