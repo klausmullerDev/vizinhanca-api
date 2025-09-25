@@ -25,17 +25,27 @@ class PedidoService {
         return pedido;
     }
 
-    async findAll(): Promise<any[]> {
-        return prisma.pedido.findMany({
+    async findAll(userId?: string): Promise<any[]> {
+        const pedidos = await prisma.pedido.findMany({
             orderBy: { createdAt: 'desc' },
             include: {
                 author: { select: { id: true, name: true, avatar: true } },
                 interesses: { select: { userId: true } },
             },
         });
+
+        // Se um userId for fornecido, mapeia os pedidos para incluir a flag de interesse
+        if (userId) {
+            return pedidos.map(pedido => {
+                const usuarioJaDemonstrouInteresse = pedido.interesses.some(interesse => interesse.userId === userId);
+                return { ...pedido, usuarioJaDemonstrouInteresse };
+            });
+        }
+
+        return pedidos;
     }
 
-    async findById(id: string): Promise<Pedido | null> {
+    async findById(id: string, userId?: string): Promise<any | null> {
         const pedido = await prisma.pedido.findUnique({
             where: { id },
             include: {
@@ -46,7 +56,16 @@ class PedidoService {
         if (!pedido) {
             throw new Error('Pedido não encontrado');
         }
-        return pedido;
+
+        // Se um userId for fornecido, verifica se ele já demonstrou interesse
+        const usuarioJaDemonstrouInteresse = userId
+            ? pedido.interesses.some(interesse => interesse.userId === userId)
+            : false;
+
+        return {
+            ...pedido,
+            usuarioJaDemonstrouInteresse,
+        };
     }
 
     async update(id: string, data: PedidoUpdateDTO): Promise<Pedido> {
@@ -68,12 +87,26 @@ class PedidoService {
     }
 
     async addInteresse(pedidoId: string, userId: string) {
-        const pedido = await this.findById(pedidoId);
+        const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
         if (!pedido) {
             throw new Error('Pedido não encontrado');
         }
         if (pedido.authorId === userId) {
             throw new Error('Você não pode demonstrar interesse no seu próprio pedido.');
+        }
+
+        // Verifica se o usuário já demonstrou interesse neste pedido
+        const interesseExistente = await prisma.interesse.findUnique({
+            where: {
+                pedidoId_userId: {
+                    pedidoId,
+                    userId,
+                },
+            },
+        });
+
+        if (interesseExistente) {
+            throw new Error('Você já demonstrou interesse neste pedido.');
         }
 
         const interesse = await prisma.interesse.create({

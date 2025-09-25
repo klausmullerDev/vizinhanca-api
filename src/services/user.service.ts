@@ -93,11 +93,24 @@ class UserService {
     return user;
   }
 
-  async findPedidosByAuthor(authorId: string): Promise<Pedido[]> {
+  async findPedidosByAuthor(authorId: string, requesterId?: string): Promise<any[]> {
     const pedidos = await prisma.pedido.findMany({
       where: { authorId: authorId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        interesses: { select: { userId: true } }
+      }
     });
+
+    // Se um requesterId for fornecido, mapeia os pedidos para incluir a flag de interesse
+    if (requesterId) {
+      return pedidos.map(pedido => {
+        const usuarioJaDemonstrouInteresse = pedido.interesses.some(interesse => interesse.userId === requesterId);
+        // Omitir a lista completa de interesses da resposta final para economizar dados
+        const { interesses, ...pedidoSemInteresses } = pedido;
+        return { ...pedidoSemInteresses, usuarioJaDemonstrouInteresse };
+      });
+    }
     return pedidos;
   }
 

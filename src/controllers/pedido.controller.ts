@@ -25,7 +25,8 @@ class PedidoController {
 
     async findAll(req: Request, res: Response) {
         try {
-            const pedidos = await PedidoService.findAll();
+            const userId = req.user?.id; // Pega o ID do usuário logado
+            const pedidos = await PedidoService.findAll(userId);
             return res.status(200).json(pedidos);
         } catch (error: any) {
             logger.error(`Erro ao buscar todos os pedidos: ${error.message}`);
@@ -36,7 +37,8 @@ class PedidoController {
     async findById(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const pedido = await PedidoService.findById(id);
+            const userId = req.user?.id; // Pega o ID do usuário logado (pode ser undefined se não houver login)
+            const pedido = await PedidoService.findById(id, userId);
             return res.status(200).json(pedido);
         } catch (error: any) {
             logger.error(`Erro ao buscar pedido ${req.params.id}: ${error.message}`);

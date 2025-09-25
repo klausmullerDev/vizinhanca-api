@@ -119,7 +119,8 @@ class UserController {
     async findPedidosByAuthor(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const pedidos = await UserService.findPedidosByAuthor(id);
+            const requesterId = req.user?.id; // Pega o ID do usuário logado para a verificação de interesse
+            const pedidos = await UserService.findPedidosByAuthor(id, requesterId);
             return res.status(200).json(pedidos);
         } catch (error: any) {
             logger.error(`Erro ao buscar pedidos do autor ${req.params.id}: ${error.message}`);
