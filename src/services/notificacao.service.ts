@@ -10,17 +10,11 @@ class NotificacaoService {
   }) {
     logger.info(`Criando notificação tipo ${data.tipo} para usuário ${data.userId}`);
 
-    const pedido = await prisma.pedido.findUnique({
-      where: { id: data.pedidoId },
-      select: { titulo: true }
-    });
-
-    const mensagemFormatada = `${data.mensagem} Pedido: ${pedido?.titulo}`;
-
     const notificacao = await prisma.notificacao.create({
       data: {
         ...data,
-        mensagem: mensagemFormatada,
+        // A mensagem já vem formatada do serviço que a chama.
+        // Isso torna o serviço de notificação mais genérico.
         lida: false
       },
       include: {
