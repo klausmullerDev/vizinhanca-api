@@ -40,20 +40,30 @@ class PedidoService {
             orderBy: { createdAt: 'desc' },
             include: {
                 author: { select: { id: true, name: true, avatar: true } },
-                interesses: { select: { userId: true } },
+                _count: {
+                    select: { interesses: true }
+                },
+                interesses: {
+                    take: 4, // Limita a 4 para otimização, conforme sugerido
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                avatar: true,
+                            },
+                        },
+                    },
+                },
             },
         });
         
         return pedidos.map(pedido => {
-            const { interesses, ...rest } = pedido;
-            const interessadosCount = interesses.length;
-            
+            const { _count, ...rest } = pedido;
             const usuarioJaDemonstrouInteresse = userId 
-                ? interesses.some(interesse => interesse.userId === userId)
+                ? pedido.interesses.some(interesse => interesse.user.id === userId)
                 : false;
-            
-            // Remove a lista de interesses para limpar a resposta
-            return { ...rest, usuarioJaDemonstrouInteresse, interessadosCount };
+            return { ...rest, usuarioJaDemonstrouInteresse, interessesCount: _count.interesses };
         });
     }
 
@@ -71,7 +81,7 @@ class PedidoService {
 
         // Se um userId for fornecido, verifica se ele já demonstrou interesse
         const usuarioJaDemonstrouInteresse = userId
-            ? pedido.interesses.some(interesse => interesse.userId === userId)
+            ? pedido.interesses.some(interesse => interesse.user.id === userId)
             : false;
 
         return {

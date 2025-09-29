@@ -98,20 +98,32 @@ class UserService {
       where: { authorId: authorId },
       orderBy: { createdAt: 'desc' },
       include: {
-        interesses: { select: { userId: true } }
+        author: { select: { id: true, name: true, avatar: true } },
+        _count: {
+          select: { interesses: true }
+        },
+        interesses: {
+          take: 4,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       }
     });
 
-    // Se um requesterId for fornecido, mapeia os pedidos para incluir a flag de interesse
-    if (requesterId) {
-      return pedidos.map(pedido => {
-        const usuarioJaDemonstrouInteresse = pedido.interesses.some(interesse => interesse.userId === requesterId);
-        // Omitir a lista completa de interesses da resposta final para economizar dados
-        const { interesses, ...pedidoSemInteresses } = pedido;
-        return { ...pedidoSemInteresses, usuarioJaDemonstrouInteresse };
-      });
-    }
-    return pedidos;
+    return pedidos.map(pedido => {
+      const { _count, ...rest } = pedido;
+      const usuarioJaDemonstrouInteresse = requesterId
+        ? pedido.interesses.some(interesse => interesse.user.id === requesterId)
+        : false;
+      return { ...rest, usuarioJaDemonstrouInteresse, interessesCount: _count.interesses };
+    });
   }
 
   async create(data: UserCreateDTO): Promise<UserPublic> {
