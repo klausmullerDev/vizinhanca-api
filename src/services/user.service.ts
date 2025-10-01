@@ -182,19 +182,25 @@ class UserService {
 
     const dataToUpdate: any = { ...userData };
 
-    // --- Início da correção ---
-    // Verifica se a data de nascimento é uma string e tenta convertê-la.
-    // Adiciona uma verificação para garantir que o resultado seja uma data válida.
-    if (dataToUpdate.dataDeNascimento && typeof dataToUpdate.dataDeNascimento === 'string') {
-      const dateObject = new Date(dataToUpdate.dataDeNascimento);
-      if (!isNaN(dateObject.getTime())) { // Checa se a data é válida
-        dataToUpdate.dataDeNascimento = dateObject;
+    if (data.dataDeNascimento) {
+      const birthDate = new Date(data.dataDeNascimento);
+      if (isNaN(birthDate.getTime())) {
+        throw new Error('Formato de data de nascimento inválido.');
+      }
+
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 18 || age > 100) {
+        throw new Error('A idade deve estar entre 18 e 100 anos.');
       } else {
-        // Se a data for inválida, remove-a do objeto de atualização
-        delete dataToUpdate.dataDeNascimento;
+        dataToUpdate.dataDeNascimento = birthDate;
       }
     }
-    // --- Fim da correção ---
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
