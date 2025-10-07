@@ -3,7 +3,13 @@ import logger from '../utils/logger';
 
 class NotificacaoService {
   async criar(data: {
-    tipo: 'INTERESSE_RECEBIDO' | 'PEDIDO_ACEITO';
+    tipo:
+      | 'INTERESSE_RECEBIDO'
+      | 'AJUDANTE_ESCOLHIDO'
+      | 'PEDIDO_FINALIZADO'
+      | 'NOVA_MENSAGEM'
+      | 'AJUDANTE_DESISTIU'
+      | 'PEDIDO_CANCELADO';
     mensagem: string;
     userId: string;
     remetenteId?: string;

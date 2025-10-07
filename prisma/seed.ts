@@ -17,6 +17,8 @@ async function main() {
   // 1. Limpar dados existentes para garantir um estado limpo
   console.log('🧹 Limpando o banco de dados...');
   // A ordem importa para não violar as constraints de chave estrangeira
+  await prisma.mensagem.deleteMany({});
+  await prisma.chat.deleteMany({});
   await prisma.notificacao.deleteMany({});
   await prisma.interesse.deleteMany({});
   await prisma.pedido.deleteMany({});
@@ -85,6 +87,7 @@ async function main() {
   console.log(`✅ ${pedidos.length} pedidos criados.`);
 
   // 4. Criar Interesses e Notificações (simulando interação)
+  // E escolher um ajudante para alguns pedidos
   console.log('❤️  Simulando interações (interesses e notificações)...');
   let interacoesCriadas = 0;
   for (const pedido of pedidos) {
@@ -128,6 +131,44 @@ async function main() {
           },
         });
         interacoesCriadas++;
+      }
+    }
+
+    // 25% de chance de um pedido com interessados já ter um ajudante escolhido
+    if (usersInteressados.length > 0 && Math.random() < 0.25) {
+      const ajudanteEscolhido = usersInteressados[0]; // Escolhe o primeiro interessado como ajudante
+      if (ajudanteEscolhido.id !== pedido.authorId) {
+        await prisma.pedido.update({
+          where: { id: pedido.id },
+          data: {
+            ajudanteId: ajudanteEscolhido.id,
+            status: 'EM_ANDAMENTO',
+          },
+        });
+        console.log(`  -> 🙋‍♂️ Usuário ${ajudanteEscolhido.name} escolhido para o pedido "${pedido.titulo.substring(0, 20)}..."`);
+
+        // Cria um chat e algumas mensagens de exemplo
+        const [p1, p2] = [pedido.authorId, ajudanteEscolhido.id].sort();
+        const chat = await prisma.chat.create({
+          data: {
+            pedidoId: pedido.id,
+            participante1Id: p1,
+            participante2Id: p2,
+          },
+        });
+
+        await prisma.mensagem.createMany({
+          data: [
+            {
+              chatId: chat.id,
+              senderId: pedido.authorId,
+              conteudo: `Olá ${ajudanteEscolhido.name}, obrigado por se oferecer para ajudar!`,
+            },
+            { chatId: chat.id, senderId: ajudanteEscolhido.id, conteudo: `De nada! Quando podemos combinar?` },
+            { chatId: chat.id, senderId: pedido.authorId, conteudo: `Pode ser amanhã à tarde?` },
+          ],
+        });
+        console.log(`    -> 💬 Chat iniciado para o pedido "${pedido.titulo.substring(0, 20)}..."`);
       }
     }
   }

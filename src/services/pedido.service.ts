@@ -72,6 +72,7 @@ class PedidoService {
             where: { id },
             include: {
                 author: { select: { id: true, name: true, avatar: true } },
+                ajudante: { select: { id: true, name: true, avatar: true } },
                 interesses: { include: { user: { select: { id: true, name: true, avatar: true } } } },
             },
         });
@@ -150,6 +151,97 @@ class PedidoService {
         });
 
         return { pedido, interesse };
+    }
+
+    async escolherAjudante(pedidoId: string, authorId: string, ajudanteUserId: string): Promise<Pedido> {
+        const pedido = await prisma.pedido.findUnique({
+            where: { id: pedidoId },
+            include: { interesses: { where: { userId: ajudanteUserId } } }
+        });
+
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
+        }
+        if (pedido.authorId !== authorId) {
+            throw new Error('Acesso negado. Apenas o autor do pedido pode escolher um ajudante.');
+        }
+        if (pedido.ajudanteId) {
+            throw new Error('Este pedido já possui um ajudante.');
+        }
+        if (pedido.interesses.length === 0) {
+            throw new Error('O usuário escolhido não demonstrou interesse neste pedido.');
+        }
+
+        const pedidoAtualizado = await prisma.pedido.update({
+            where: { id: pedidoId },
+            data: {
+                ajudanteId: ajudanteUserId,
+                status: 'EM_ANDAMENTO',
+            },
+        });
+
+        // ✅ NOTIFICAR O AJUDANTE ESCOLHIDO
+        await NotificacaoService.criar({
+            userId: ajudanteUserId,
+            tipo: 'AJUDANTE_ESCOLHIDO',
+            mensagem: `Você foi escolhido para ajudar no pedido "${pedido.titulo}"!`,
+            pedidoId: pedidoId,
+            remetenteId: authorId,
+        });
+
+        return pedidoAtualizado;
+    }
+
+    async finalizar(pedidoId: string, authorId: string): Promise<Pedido> {
+        const pedido = await prisma.pedido.findUnique({
+            where: { id: pedidoId },
+        });
+
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
+        }
+        if (pedido.authorId !== authorId) {
+            throw new Error('Acesso negado. Apenas o autor pode finalizar o pedido.');
+        }
+        if (pedido.status !== 'EM_ANDAMENTO') {
+            throw new Error('Apenas pedidos em andamento podem ser finalizados.');
+        }
+
+        return prisma.pedido.update({
+            where: { id: pedidoId },
+            data: { status: 'FINALIZADO' },
+        });
+    }
+
+    async desistir(pedidoId: string, ajudanteId: string): Promise<Pedido> {
+        const pedido = await prisma.pedido.findUnique({
+            where: { id: pedidoId },
+        });
+
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
+        }
+        if (pedido.ajudanteId !== ajudanteId) {
+            throw new Error('Acesso negado. Apenas o ajudante escolhido pode desistir.');
+        }
+        if (pedido.status !== 'EM_ANDAMENTO') {
+            throw new Error('Não é possível desistir de um pedido que não está em andamento.');
+        }
+
+        // Notificar o autor do pedido
+        const ajudante = await prisma.user.findUnique({ where: { id: ajudanteId } });
+        await NotificacaoService.criar({
+            userId: pedido.authorId,
+            tipo: 'AJUDANTE_DESISTIU',
+            mensagem: `${ajudante?.name} não pode mais te ajudar no pedido "${pedido.titulo}". Você pode escolher outro ajudante.`,
+            pedidoId: pedidoId,
+            remetenteId: ajudanteId,
+        });
+
+        return prisma.pedido.update({
+            where: { id: pedidoId },
+            data: { ajudanteId: null, status: 'ABERTO' },
+        });
     }
 }
 

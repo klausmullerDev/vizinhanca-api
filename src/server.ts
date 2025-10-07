@@ -5,6 +5,7 @@ import swaggerSpec from './swagger';
 import userRouter from './routes/user.routes';
 import pedidoRouter from './routes/pedido.routes';
 import notificacaoRouter from './routes/notificacao.routes';
+import chatRouter from './routes/chat.routes';
 import logger from './utils/logger';
 import path from 'path';
 
@@ -54,6 +55,7 @@ const swaggerLoginScript = `
 app.use('/users', userRouter); 
 app.use('/pedidos', pedidoRouter); 
 app.use('/notificacoes', notificacaoRouter); 
+app.use('/chats', chatRouter);
 
 // Servir arquivos estáticos da pasta 'uploads' DEPOIS das rotas da API
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

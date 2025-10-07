@@ -181,4 +181,84 @@ pedidoRouter.delete('/:id', PedidoController.delete);
  */
 pedidoRouter.post('/:id/interesse', PedidoController.addInteresse);
 
+/**
+ * @swagger
+ * /pedidos/{id}/escolher-ajudante:
+ *   post:
+ *     tags: [Pedidos]
+ *     summary: Escolhe um ajudante para o pedido
+ *     description: Permite que o autor do pedido escolha um dos usuários interessados como ajudante.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId: { type: 'string', format: 'uuid' }
+ */
+pedidoRouter.post('/:id/escolher-ajudante', PedidoController.escolherAjudante);
+
+/**
+ * @swagger
+ * /pedidos/{id}/finalizar:
+ *   patch:
+ *     tags: [Pedidos]
+ *     summary: Finaliza um pedido
+ *     description: Permite que o autor do pedido o marque como finalizado.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Pedido finalizado com sucesso
+ *       '400':
+ *         description: 'Erro (ex: pedido não está em andamento)'
+ *       '403':
+ *         description: Acesso negado
+ */
+pedidoRouter.patch('/:id/finalizar', PedidoController.finalizar);
+
+/**
+ * @swagger
+ * /pedidos/{id}/desistir:
+ *   patch:
+ *     tags: [Pedidos]
+ *     summary: Desiste de ajudar em um pedido
+ *     description: Permite que o ajudante escolhido desista de um pedido, que voltará ao status 'ABERTO'.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Desistência registrada com sucesso
+ *       '400':
+ *         description: 'Erro (ex: pedido não está em andamento)'
+ *       '403':
+ *         description: Acesso negado
+ */
+pedidoRouter.patch('/:id/desistir', PedidoController.desistir);
+
+
 export default pedidoRouter;

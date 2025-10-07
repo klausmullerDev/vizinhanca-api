@@ -15,7 +15,17 @@ const options: swaggerJsdoc.Options = {
       },
     ],
     components: {
+      tags: [{ name: 'Chat', description: 'Endpoints de Chat' }],
       schemas: {
+        // User Summary for embedding in other schemas
+        UserSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            avatar: { type: 'string', nullable: true },
+          }
+        },
         // User schemas
         User: {
           type: 'object',
@@ -69,16 +79,49 @@ const options: swaggerJsdoc.Options = {
             titulo: { type: 'string' },
             descricao: { type: 'string' },
             imagem: { type: 'string', nullable: true },
-            status: { type: 'string', enum: ['ABERTO', 'FINALIZADO', 'CANCELADO'] },
+            status: { type: 'string', enum: ['ABERTO', 'EM_ANDAMENTO', 'FINALIZADO', 'CANCELADO'] },
             createdAt: { type: 'string', format: 'date-time' },
-            author: { $ref: '#/components/schemas/User' }
+            author: { $ref: '#/components/schemas/UserSummary' },
+            ajudante: { '$ref': '#/components/schemas/UserSummary', nullable: true }
+          }
+        },
+        Chat: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            pedidoId: { type: 'string', format: 'uuid' },
+            participante1: { $ref: '#/components/schemas/UserSummary' },
+            participante2: { $ref: '#/components/schemas/UserSummary' },
+          }
+        },
+        Mensagem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            conteudo: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            chatId: { type: 'string', format: 'uuid' },
+            senderId: { type: 'string', format: 'uuid' },
+            sender: { $ref: '#/components/schemas/UserSummary' }
           }
         },
         Notificacao: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            tipo: { type: 'string', enum: ['INTERESSE_RECEBIDO', 'PEDIDO_ACEITO'] },
+            tipo: {
+              type: 'string',
+              enum: [
+                'INTERESSE_RECEBIDO',
+                'AJUDANTE_ESCOLHIDO',
+                'PEDIDO_FINALIZADO',
+                'NOVA_MENSAGEM',
+                'AJUDANTE_DESISTIU',
+                'PEDIDO_CANCELADO'
+              ]
+            },
             mensagem: { type: 'string' },
             lida: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },

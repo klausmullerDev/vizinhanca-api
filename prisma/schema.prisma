@@ -18,7 +18,7 @@ model User {
   name             String
   email            String    @unique
   password         String
-  avatar           String?   // Campo já existe para foto de perfil
+  avatar           String? // Campo já existe para foto de perfil
   cpf              String?   @unique
   telefone         String?
   dataDeNascimento DateTime?
@@ -28,13 +28,18 @@ model User {
   resetPasswordToken   String?   @unique
   resetPasswordExpires DateTime?
 
-  endereco     Endereco?
-  pedidos      Pedido[]
-  interesses   Interesse[]
-  avaliacoes   Avaliacao[]
+  endereco   Endereco?
+  pedidos    Pedido[]
+  interesses Interesse[]
 
+  ajudaEm               Pedido[]      @relation("AjudaPedidos")
+  avaliacoesFeitas      Avaliacao[]   @relation("AvaliacoesFeitas")
+  avaliacoesRecebidas   Avaliacao[]   @relation("AvaliacoesRecebidas")
+  chats1                Chat[]        @relation("ChatsParticipante1")
+  chats2                Chat[]        @relation("ChatsParticipante2")
   notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
   notificacoesEnviadas  Notificacao[] @relation("NotificacoesEnviadas")
+  mensagensEnviadas     Mensagem[]
 
   @@map("users")
 }
@@ -49,7 +54,6 @@ model Endereco {
   estado      String
   cep         String
 
-  
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -57,39 +61,78 @@ model Endereco {
 }
 
 model Pedido {
-  id          String   @id @default(uuid())
-  titulo      String
-  descricao   String
-  imagem      String?  // Novo campo para foto opcional do pedido
-  createdAt   DateTime @default(now())
-  status      String   @default("ABERTO") // ABERTO, FINALIZADO, CANCELADO
+  id        String   @id @default(uuid())
+  titulo    String
+  descricao String
+  imagem    String? // Novo campo para foto opcional do pedido
+  createdAt DateTime @default(now())
+  status    String   @default("ABERTO") // ABERTO, EM_ANDAMENTO, FINALIZADO, CANCELADO
 
   authorId     String
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   interesses   Interesse[]
   notificacoes Notificacao[] // Nova relação
+  chats        Chat[]
+  avaliacao    Avaliacao?
+
+  ajudanteId String?
+  ajudante   User?   @relation("AjudaPedidos", fields: [ajudanteId], references: [id], onDelete: SetNull)
 
   @@map("pedidos")
+}
+
+model Chat {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pedidoId String
+  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  participante1Id String
+  participante1   User   @relation("ChatsParticipante1", fields: [participante1Id], references: [id], onDelete: Cascade)
+
+  participante2Id String
+  participante2   User   @relation("ChatsParticipante2", fields: [participante2Id], references: [id], onDelete: Cascade)
+
+  mensagens Mensagem[]
+
+  @@unique([pedidoId, participante1Id, participante2Id])
+  @@map("chats")
+}
+
+model Mensagem {
+  id        String   @id @default(uuid())
+  conteudo  String
+  createdAt DateTime @default(now())
+
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("mensagens")
 }
 
 // Nova model para notificações
 model Notificacao {
   id        String   @id @default(uuid())
-  tipo      String   // INTERESSE_RECEBIDO, PEDIDO_ACEITO, etc
+  tipo      String // INTERESSE_RECEBIDO, AJUDANTE_ESCOLHIDO, PEDIDO_FINALIZADO, NOVA_MENSAGEM, AJUDANTE_DESISTIU, PEDIDO_CANCELADO
   mensagem  String
   lida      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   // Para quem é a notificação
-  userId   String
-  user     User    @relation("NotificacoesRecebidas", fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation("NotificacoesRecebidas", fields: [userId], references: [id], onDelete: Cascade)
 
   // Quem enviou a notificação (opcional)
   remetenteId String?
   remetente   User?   @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id], onDelete: SetNull)
 
   pedidoId String
-  pedido   Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 
   @@map("notificacoes")
 }
@@ -97,23 +140,33 @@ model Notificacao {
 model Interesse {
   id String @id @default(uuid())
 
-  
   userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   pedidoId String
-  
-  
-  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 
-  
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
   @@unique([pedidoId, userId])
   @@map("interesses")
 }
 
 model Avaliacao {
-  id       String @id @default(uuid())
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  nota       Int // Ex: 1 a 5
+  comentario String?
+  createdAt  DateTime @default(now())
+
+  // Quem avaliou
+  avaliadorId String
+  avaliador   User   @relation("AvaliacoesFeitas", fields: [avaliadorId], references: [id])
+
+  // Quem foi avaliado
+  avaliadoId String
+  avaliado   User   @relation("AvaliacoesRecebidas", fields: [avaliadoId], references: [id])
+
+  // Ligado ao pedido que originou a avaliação
+  pedidoId String @unique // Garante uma avaliação por pedido
+  pedido   Pedido @relation(fields: [pedidoId], references: [id])
 
   @@map("avaliacoes")
 }

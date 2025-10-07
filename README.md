@@ -114,6 +114,23 @@ A documentação completa dos endpoints, incluindo modelos de dados e a possibil
 | GET | `/pedidos` | Lista todos os pedidos de ajuda. | Sim (Bearer Token) |
 | GET | `/pedidos/:id` | Busca um pedido por ID. | Sim (Bearer Token) |
 
+### Chat
+
+| Método | Rota | Descrição | Autenticação Necessária |
+|--------|------|-----------|-------------------------|
+| POST | `/chats` | Cria ou obtém um chat entre o usuário logado e outro usuário sobre um pedido. | Sim (Bearer Token) |
+| GET | `/chats/pedido/{pedidoId}` | Lista os chats de um pedido para o usuário logado. | Sim (Bearer Token) |
+| GET | `/chats/{chatId}/mensagens` | Lista todas as mensagens de um chat específico. | Sim (Bearer Token) |
+| POST | `/chats/{chatId}/mensagens` | Envia uma nova mensagem para um chat. | Sim (Bearer Token) |
+
+### Notificações
+
+| Método | Rota | Descrição | Autenticação Necessária |
+|--------|------|-----------|-------------------------|
+| GET | `/notificacoes` | Lista as notificações do usuário logado. | Sim (Bearer Token) |
+| GET | `/notificacoes/nao-lidas` | Conta o número de notificações não lidas. | Sim (Bearer Token) |
+| PATCH | `/notificacoes/{id}/lida` | Marca uma notificação como lida. | Sim (Bearer Token) |
+
 ## 📜 Scripts NPM
 
 - `npm run dev`: Inicia o servidor em modo de desenvolvimento com ts-node-dev.
