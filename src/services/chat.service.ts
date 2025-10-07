@@ -49,7 +49,7 @@ class ChatService {
     }
 
     async findChatsByPedidoForUser(pedidoId: string, userId: string) {
-        return prisma.chat.findMany({
+        const chats = await prisma.chat.findMany({
             where: {
                 pedidoId,
                 OR: [{ participante1Id: userId }, { participante2Id: userId }],
@@ -61,6 +61,33 @@ class ChatService {
             },
             orderBy: { updatedAt: 'desc' },
         });
+
+        // Transforma o resultado para combinar os participantes em um único array
+        return chats.map(({ participante1, participante2, ...resto }) => ({
+            ...resto,
+            participantes: [participante1, participante2],
+        }));
+    }
+
+    async findChatByIdForUser(chatId: string, userId: string) {
+        const chat = await prisma.chat.findFirst({
+            where: {
+                id: chatId,
+                OR: [{ participante1Id: userId }, { participante2Id: userId }],
+            },
+            include: {
+                participante1: { select: { id: true, name: true, avatar: true } },
+                participante2: { select: { id: true, name: true, avatar: true } },
+                pedido: { select: { id: true, titulo: true, authorId: true } },
+            },
+        });
+
+        if (!chat) {
+            throw new Error('Chat não encontrado ou acesso negado.');
+        }
+
+        const { participante1, participante2, ...resto } = chat;
+        return { ...resto, participantes: [participante1, participante2] };
     }
 
     async findMensagensByChat(chatId: string, userId: string) {

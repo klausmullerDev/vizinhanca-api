@@ -32,6 +32,19 @@ class ChatController {
         }
     }
 
+    async getChatById(req: Request, res: Response) {
+        try {
+            const { chatId } = req.params;
+            const userId = req.user!.id;
+            const chat = await ChatService.findChatByIdForUser(chatId, userId);
+            return res.status(200).json(chat);
+        } catch (error: any) {
+            logger.error(`Erro ao buscar chat por ID ${req.params.chatId}: ${error.message}`);
+            // Retorna 404 se o chat não for encontrado ou o usuário não for participante
+            return res.status(404).json({ message: error.message });
+        }
+    }
+
     async getMensagens(req: Request, res: Response) {
         try {
             const { chatId } = req.params;

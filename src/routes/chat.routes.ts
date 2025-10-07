@@ -36,24 +36,24 @@ chatRouter.post('/', ChatController.createOrGetChat);
 
 /**
  * @swagger
- * /chats/pedido/{pedidoId}:
+ * /chats/{chatId}:
  *   get:
  *     tags: [Chat]
- *     summary: Lista os chats de um pedido para o usuário logado
+ *     summary: Busca um chat por ID
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: pedidoId
+ *         name: chatId
  *         required: true
  *         schema:
  *           type: string
  *           format: uuid
  *     responses:
  *       '200':
- *         description: Lista de chats.
+ *         description: Dados do chat.
  */
-chatRouter.get('/pedido/:pedidoId', ChatController.getChatsPorPedido);
+chatRouter.get('/:chatId', ChatController.getChatById);
 
 /**
  * @swagger

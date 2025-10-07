@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import PedidoService from '../services/pedido.service';
+import ChatService from '../services/chat.service';
 import NotificacaoService from '../services/notificacao.service';
 import logger from '../utils/logger';
 

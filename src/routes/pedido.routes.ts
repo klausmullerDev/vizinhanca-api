@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import PedidoController from '../controllers/pedido.controller';
+import ChatController from '../controllers/chat.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { uploadConfig as upload } from '../services/upload.service';
 
@@ -259,6 +260,27 @@ pedidoRouter.patch('/:id/finalizar', PedidoController.finalizar);
  *         description: Acesso negado
  */
 pedidoRouter.patch('/:id/desistir', PedidoController.desistir);
+
+/**
+ * @swagger
+ * /pedidos/{id}/chats:
+ *   get:
+ *     tags: [Pedidos, Chat]
+ *     summary: Lista os chats de um pedido para o usuário logado
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Lista de chats.
+ */
+pedidoRouter.get('/:id/chats', ChatController.getChatsPorPedido);
 
 
 export default pedidoRouter;
