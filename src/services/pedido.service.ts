@@ -243,6 +243,45 @@ class PedidoService {
             data: { ajudanteId: null, status: 'ABERTO' },
         });
     }
+
+    async cancelar(pedidoId: string, authorId: string): Promise<Pedido> {
+        const pedido = await prisma.pedido.findUnique({
+            where: { id: pedidoId },
+            include: { author: { select: { name: true } } },
+        });
+
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
+        }
+        if (pedido.authorId !== authorId) {
+            throw new Error('Acesso negado. Apenas o autor pode cancelar o pedido.');
+        }
+        if (['FINALIZADO', 'CANCELADO'].includes(pedido.status)) {
+            throw new Error(`Este pedido já está ${pedido.status.toLowerCase()} e não pode ser cancelado.`);
+        }
+
+        const pedidoCancelado = await prisma.pedido.update({
+            where: { id: pedidoId },
+            data: { status: 'CANCELADO' },
+            include: {
+                author: { select: { id: true, name: true, avatar: true } },
+                ajudante: { select: { id: true, name: true, avatar: true } },
+                interesses: { include: { user: { select: { id: true, name: true, avatar: true } } } },
+            },
+        });
+
+        if (pedido.ajudanteId) {
+            await NotificacaoService.criar({
+                userId: pedido.ajudanteId,
+                tipo: 'PEDIDO_CANCELADO',
+                mensagem: `${pedido.author.name} cancelou o pedido de ajuda "${pedido.titulo}".`,
+                pedidoId: pedido.id,
+                remetenteId: pedido.authorId,
+            });
+        }
+
+        return pedidoCancelado;
+    }
 }
 
 export default new PedidoService();

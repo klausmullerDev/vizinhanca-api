@@ -212,7 +212,7 @@ pedidoRouter.post('/:id/escolher-ajudante', PedidoController.escolherAjudante);
 /**
  * @swagger
  * /pedidos/{id}/finalizar:
- *   patch:
+ *   post:
  *     tags: [Pedidos]
  *     summary: Finaliza um pedido
  *     description: Permite que o autor do pedido o marque como finalizado.
@@ -233,7 +233,7 @@ pedidoRouter.post('/:id/escolher-ajudante', PedidoController.escolherAjudante);
  *       '403':
  *         description: Acesso negado
  */
-pedidoRouter.patch('/:id/finalizar', PedidoController.finalizar);
+pedidoRouter.post('/:id/finalizar', PedidoController.finalizar);
 
 /**
  * @swagger
@@ -260,6 +260,30 @@ pedidoRouter.patch('/:id/finalizar', PedidoController.finalizar);
  *         description: Acesso negado
  */
 pedidoRouter.patch('/:id/desistir', PedidoController.desistir);
+
+/**
+ * @swagger
+ * /pedidos/{id}/cancelar:
+ *   patch:
+ *     tags: [Pedidos]
+ *     summary: Cancela um pedido
+ *     description: Permite que o autor do pedido o marque como cancelado.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Pedido cancelado com sucesso
+ *       '403':
+ *         description: Acesso negado
+ */
+pedidoRouter.patch('/:id/cancelar', PedidoController.cancelar);
 
 /**
  * @swagger

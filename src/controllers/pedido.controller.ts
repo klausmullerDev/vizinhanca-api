@@ -153,6 +153,26 @@ class PedidoController {
             return res.status(400).json({ message: error.message });
         }
     }
+
+    async cancelar(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const authorId = req.user!.id;
+
+            const pedido = await PedidoService.cancelar(id, authorId);
+            logger.info(`Pedido ${id} cancelado pelo autor ${authorId}.`);
+            return res.status(200).json(pedido);
+        } catch (error: any) {
+            logger.error(`Erro ao cancelar pedido ${req.params.id}: ${error.message}`);
+            if (error.message.includes('Acesso negado')) {
+                return res.status(403).json({ message: error.message });
+            }
+            if (error.message.includes('não encontrado')) {
+                return res.status(404).json({ message: error.message });
+            }
+            return res.status(400).json({ message: error.message });
+        }
+    }
 }
 
 export default new PedidoController();
