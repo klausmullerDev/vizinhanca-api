@@ -68,9 +68,7 @@ class ChatController {
             }
 
             const mensagem = await ChatService.createMensagem(chatId, senderId, conteudo);
-            // Idealmente, aqui você emitiria um evento via WebSocket para o destinatário.
-            // Por enquanto, a notificação cuidará de avisá-lo.
-            return res.status(201).json(mensagem);
+            return res.status(201).json({ message: 'Mensagem enviada com sucesso.', data: mensagem });
         } catch (error: any) {
             logger.error(`Erro ao enviar mensagem no chat ${req.params.chatId}: ${error.message}`);
             return res.status(400).json({ message: error.message });

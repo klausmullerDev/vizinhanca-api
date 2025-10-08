@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger';
 import userRouter from './routes/user.routes';
@@ -7,9 +9,14 @@ import pedidoRouter from './routes/pedido.routes';
 import notificacaoRouter from './routes/notificacao.routes';
 import chatRouter from './routes/chat.routes';
 import logger from './utils/logger';
+import { initializeSocket } from './socket';
 import path from 'path';
 
 const app = express();
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+});
 
 
 app.use(express.json());
@@ -67,7 +74,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 
 const PORT = 3000;
 
-app.listen(PORT, () => {
+// Inicializa a lógica do Socket.IO
+initializeSocket(io);
+
+server.listen(PORT, () => {
   logger.info(`Server is running on http://localhost:${PORT}`);
   logger.info(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });

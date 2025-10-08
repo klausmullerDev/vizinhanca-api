@@ -15,7 +15,13 @@ const options: swaggerJsdoc.Options = {
       },
     ],
     components: {
-      tags: [{ name: 'Chat', description: 'Endpoints de Chat' }],
+      tags: [{ 
+        name: 'Chat', 
+        description: `Endpoints para gerenciamento de conversas.
+        <br>
+        **Nota:** A entrega de mensagens em tempo real é feita via **WebSockets**. Após enviar uma mensagem com sucesso via POST, o servidor emite um evento \`nova-mensagem\` para a sala de chat correspondente. Os clientes conectados devem escutar este evento para atualizar a UI.
+        `
+      }],
       schemas: {
         // User Summary for embedding in other schemas
         UserSummary: {

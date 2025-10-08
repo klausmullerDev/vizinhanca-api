@@ -10,6 +10,7 @@ Este projeto foi construído com foco em robustez, escalabilidade e manutenibili
 - **ORM**: Prisma
 - **Banco de Dados**: PostgreSQL
 - **Autenticação**: JSON Web Tokens (JWT)
+- **Comunicação em Tempo Real**: WebSockets com Socket.IO
 - **Documentação da API**: Swagger (OpenAPI) com swagger-ui-express e swagger-autogen
 - **Containerização**: Docker
 - **Logger**: Winston

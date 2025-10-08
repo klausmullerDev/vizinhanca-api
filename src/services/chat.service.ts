@@ -1,5 +1,6 @@
 import { prisma } from '../database/prismaClient';
 import NotificacaoService from './notificacao.service';
+import { emitToRoom } from '../socket';
 
 class ChatService {
     async createOrGet(pedidoId: string, userId1: string, userId2: string) {
@@ -132,6 +133,11 @@ class ChatService {
                 chatId,
                 senderId,
             },
+            include: { // Incluímos o sender para retornar o objeto completo
+                sender: {
+                    select: { id: true, name: true, avatar: true }
+                }
+            }
         });
 
         // Atualiza o `updatedAt` do chat para que ele apareça no topo da lista
@@ -139,6 +145,9 @@ class ChatService {
             where: { id: chatId },
             data: { updatedAt: new Date() }
         });
+
+        // Emite o evento via WebSocket para a sala do chat
+        emitToRoom(chatId, 'nova-mensagem', mensagem);
 
         // Notifica o outro usuário
         await NotificacaoService.criar({
