@@ -31,7 +31,7 @@ class NotificacaoController {
     try {
       const userId = req.user.id;
       const quantidade = await NotificacaoService.contarNaoLidas(userId);
-      return res.json({ quantidade });
+      return res.json({ quantidade: quantidade });
     } catch (error: any) {
       logger.error(`Erro ao contar notificações: ${error.message}`);
       return res.status(500).json({ message: 'Erro interno do servidor' });

@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger';
 import userRouter from './routes/user.routes';
 import pedidoRouter from './routes/pedido.routes';
+import avaliacaoRouter from './routes/avaliacao.routes';
 import notificacaoRouter from './routes/notificacao.routes';
 import chatRouter from './routes/chat.routes';
 import logger from './utils/logger';
@@ -61,6 +62,7 @@ const swaggerLoginScript = `
 
 app.use('/users', userRouter); 
 app.use('/pedidos', pedidoRouter); 
+app.use('/avaliacoes', avaliacaoRouter);
 app.use('/notificacoes', notificacaoRouter); 
 app.use('/chats', chatRouter);
 

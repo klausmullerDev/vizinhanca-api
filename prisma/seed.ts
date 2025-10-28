@@ -174,6 +174,38 @@ async function main() {
   }
   console.log(`✅ ${interacoesCriadas} interações criadas.`);
 
+  // 5. Finalizar alguns pedidos e criar avaliações
+  console.log('⭐ Finalizando pedidos e criando avaliações...');
+  const pedidosEmAndamento = await prisma.pedido.findMany({
+    where: { status: 'EM_ANDAMENTO' },
+  });
+
+  let avaliacoesCriadas = 0;
+  for (const pedido of pedidosEmAndamento) {
+    // 50% de chance de finalizar e avaliar
+    if (Math.random() < 0.5 && pedido.ajudanteId) {
+      await prisma.pedido.update({
+        where: { id: pedido.id },
+        data: { status: 'FINALIZADO' },
+      });
+
+      await prisma.avaliacao.create({
+        data: {
+          pedidoId: pedido.id,
+          avaliadorId: pedido.authorId,
+          avaliadoId: pedido.ajudanteId,
+          nota: faker.number.int({ min: 4, max: 5 }), // Gerar notas altas
+          comentario: faker.lorem.sentence(),
+        },
+      });
+      avaliacoesCriadas++;
+      console.log(`  -> 🏁 Pedido "${pedido.titulo.substring(0, 20)}..." finalizado e avaliado.`);
+    }
+  }
+  if (avaliacoesCriadas > 0) {
+    console.log(`✅ ${avaliacoesCriadas} avaliações criadas.`);
+  }
+
   console.log('\n' + '-'.repeat(50));
   console.log('🎉 Seeding finalizado com sucesso! 🎉');
   console.log('\n' + '-'.repeat(50));

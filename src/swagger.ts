@@ -44,6 +44,7 @@ const options: swaggerJsdoc.Options = {
             telefone: { type: 'string', nullable: true },
             dataDeNascimento: { type: 'string', format: 'date-time', nullable: true },
             sexo: { type: 'string', nullable: true },
+            mediaAvaliacoes: { type: 'number', nullable: true, description: 'A média de notas recebidas pelo usuário.' },
             createdAt: { type: 'string', format: 'date-time' },
             endereco: { $ref: '#/components/schemas/Endereco' }
           }

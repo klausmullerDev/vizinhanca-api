@@ -4,9 +4,10 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/mailer';
 
-export type UserPublic = Omit<User, 'password' | 'resetPasswordToken' | 'resetPasswordExpires'>;
+export type UserPublic = Omit<User, 'password' | 'resetPasswordToken' | 'resetPasswordExpires'> & { mediaAvaliacoes?: number | null };
 
 export type UserWithProfileStatus = UserPublic & {
+  mediaAvaliacoes?: number | null;
   isProfileComplete: boolean;
   endereco: {} | null;
 };
@@ -68,6 +69,13 @@ class UserService {
       throw new Error('User not found');
     }
 
+    const agregacaoAvaliacoes = await prisma.avaliacao.aggregate({
+      where: { avaliadoId: userId },
+      _avg: {
+        nota: true,
+      },
+    });
+
     const isProfileComplete = Boolean(
       user.cpf &&
       user.telefone &&
@@ -76,12 +84,13 @@ class UserService {
 
     return {
       ...user,
-      isProfileComplete
+      isProfileComplete,
+      mediaAvaliacoes: agregacaoAvaliacoes._avg.nota,
     };
   }
 
   async findById(userId: string): Promise<UserPublic> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({      
       where: { id: userId },
       select: userPublicSelect
     });
@@ -89,8 +98,18 @@ class UserService {
     if (!user) {
       throw new Error('User not found');
     }
+    
+    const agregacaoAvaliacoes = await prisma.avaliacao.aggregate({
+      where: { avaliadoId: userId },
+      _avg: {
+        nota: true,
+      },
+    });
 
-    return user;
+    return {
+      ...user,
+      mediaAvaliacoes: agregacaoAvaliacoes._avg.nota,
+    };
   }
 
   async findPedidosByAuthor(authorId: string, requesterId?: string): Promise<any[]> {

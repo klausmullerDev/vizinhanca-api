@@ -54,9 +54,16 @@ USER1_LOGIN=$(curl -s -X POST "$BASE_URL/users/login" \
     "password": "123456"
   }')
 
+USER1_ID=$(echo $USER1_LOGIN | jq -r '.user.id')
 USER1_TOKEN=$(echo $USER1_LOGIN | jq -r '.token')
+if [ -z "$USER1_ID" ] || [ "$USER1_ID" = "null" ]; then
+    echo -e "${RED}Failed to get ID for user 1${NC}"
+    echo "$USER1_LOGIN"
+    exit 1
+fi
 if [ -z "$USER1_TOKEN" ] || [ "$USER1_TOKEN" = "null" ]; then
     echo -e "${RED}Failed to get token for user 1${NC}"
+    echo "$USER1_LOGIN"
     exit 1
 fi
 echo "User 1 logged in successfully"
@@ -84,9 +91,16 @@ USER2_LOGIN=$(curl -s -X POST "$BASE_URL/users/login" \
     "password": "123456"
   }')
 
+USER2_ID=$(echo $USER2_LOGIN | jq -r '.user.id')
 USER2_TOKEN=$(echo $USER2_LOGIN | jq -r '.token')
+if [ -z "$USER2_ID" ] || [ "$USER2_ID" = "null" ]; then
+    echo -e "${RED}Failed to get ID for user 2${NC}"
+    echo "$USER2_LOGIN"
+    exit 1
+fi
 if [ -z "$USER2_TOKEN" ] || [ "$USER2_TOKEN" = "null" ]; then
     echo -e "${RED}Failed to get token for user 2${NC}"
+    echo "$USER2_LOGIN"
     exit 1
 fi
 echo "User 2 logged in successfully"
@@ -155,5 +169,45 @@ UNREAD_COUNT=$(curl -s -X GET "$BASE_URL/notificacoes/nao-lidas/quantidade" \
   -H "Authorization: Bearer $USER1_TOKEN")
 
 echo "Unread count: $UNREAD_COUNT"
+
+echo -e "\n${GREEN}7. Choosing helper for the pedido...${NC}"
+ESCOLHER_AJUDANTE_RESPONSE=$(curl -s -X POST "$BASE_URL/pedidos/$PEDIDO_ID/escolher-ajudante" \
+  -H "Authorization: Bearer $USER1_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "'$USER2_ID'"
+  }')
+
+check_response "$ESCOLHER_AJUDANTE_RESPONSE"
+echo "Helper chosen successfully"
+
+echo -e "\n${GREEN}8. Finalizing pedido...${NC}"
+FINALIZAR_RESPONSE=$(curl -s -X POST "$BASE_URL/pedidos/$PEDIDO_ID/finalizar" \
+  -H "Authorization: Bearer $USER1_TOKEN")
+
+check_response "$FINALIZAR_RESPONSE"
+echo "Pedido finalized successfully"
+
+echo -e "\n${GREEN}9. Rating the helper...${NC}"
+AVALIACAO_RESPONSE=$(curl -s -X POST "$BASE_URL/avaliacoes" \
+  -H "Authorization: Bearer $USER1_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pedidoId": "'$PEDIDO_ID'",
+    "nota": 5,
+    "comentario": "Excelente ajuda, muito prestativo!"
+  }')
+
+check_response "$AVALIACAO_RESPONSE"
+echo "Helper rated successfully"
+echo "$AVALIACAO_RESPONSE" | jq '.'
+
+echo -e "\n${GREEN}10. Checking helper's profile for rating...${NC}"
+USER2_PROFILE=$(curl -s -X GET "$BASE_URL/users/$USER2_ID" \
+  -H "Authorization: Bearer $USER1_TOKEN")
+
+echo "User 2 profile:"
+echo "$USER2_PROFILE" | jq '.'
+
 
 echo -e "\n${GREEN}✅ All tests completed successfully${NC}"

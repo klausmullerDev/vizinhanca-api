@@ -83,7 +83,7 @@ class NotificacaoService {
       }
     });
 
-    return { quantidade: count };
+    return count;
   }
 }
 
