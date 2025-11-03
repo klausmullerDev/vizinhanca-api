@@ -11,8 +11,8 @@ avaliacaoRouter.use(authMiddleware);
  * /avaliacoes:
  *   post:
  *     tags: [Avaliações]
- *     summary: Cria uma nova avaliação para um pedido finalizado
- *     description: Permite que o autor de um pedido finalizado avalie o ajudante.
+ *     summary: Cria uma nova avaliação mútua para um pedido finalizado
+ *     description: Permite que o autor ou o ajudante de um pedido finalizado avalie a outra parte. O autor avalia o ajudante, e o ajudante avalia o autor. Cada um só pode avaliar uma vez por pedido.
  *     security:
  *       - bearerAuth: []
  *     requestBody:

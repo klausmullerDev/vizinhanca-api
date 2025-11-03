@@ -65,6 +65,7 @@ model Pedido {
   titulo    String
   descricao String
   imagem    String? // Novo campo para foto opcional do pedido
+  videoPath String? // Novo campo para vídeo opcional do pedido
   createdAt DateTime @default(now())
   status    String   @default("ABERTO") // ABERTO, EM_ANDAMENTO, FINALIZADO, CANCELADO
 
@@ -73,7 +74,7 @@ model Pedido {
   interesses   Interesse[]
   notificacoes Notificacao[] // Nova relação
   chats        Chat[]
-  avaliacao    Avaliacao?
+  avaliacoes   Avaliacao[]   // Um pedido pode ter múltiplas avaliações (autor -> ajudante, ajudante -> autor)
 
   ajudanteId String?
   ajudante   User?   @relation("AjudaPedidos", fields: [ajudanteId], references: [id], onDelete: SetNull)
@@ -165,9 +166,10 @@ model Avaliacao {
   avaliado   User   @relation("AvaliacoesRecebidas", fields: [avaliadoId], references: [id])
 
   // Ligado ao pedido que originou a avaliação
-  pedidoId String @unique // Garante uma avaliação por pedido
+  pedidoId String
   pedido   Pedido @relation(fields: [pedidoId], references: [id])
 
+  @@unique([pedidoId, avaliadorId]) // Garante que um usuário só pode avaliar uma vez por pedido
   @@map("avaliacoes")
 }
 

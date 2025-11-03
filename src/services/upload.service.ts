@@ -15,14 +15,15 @@ const storage = multer.diskStorage({
 export const uploadConfig = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 50 * 1024 * 1024 // 50MB
   },
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
       'image/jpeg',
       'image/png',
-      
-      'image/gif'
+      'image/gif',
+      'video/mp4',
+      'video/webm'
     ];
 
     if (allowedMimes.includes(file.mimetype)) {

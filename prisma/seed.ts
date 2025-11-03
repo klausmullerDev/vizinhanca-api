@@ -1,11 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User, Pedido } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { pt_BR, faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
 
 // --- Configurações ---
-const TOTAL_USERS = 10;
+const TOTAL_RANDOM_USERS = 9; // 9 aleatórios + 2 de teste = 11 total
 const TOTAL_PEDIDOS = 20;
+const PEDIDOS_POR_USUARIO_TESTE = 5;
 const TEST_USER_PASSWORD = 'password123';
 // ---------------------
 
@@ -13,20 +15,29 @@ async function main() {
   const { faker } = await import('@faker-js/faker');
 
   console.log('🚀 Iniciando o processo de seeding...');
+  await cleanDatabase();
+  const users = await createUsers();
+  await createPedidos(users);
+  await createInteractionsAndChats(users);
 
-  // 1. Limpar dados existentes para garantir um estado limpo
+  printSummary(users[0], users[1]);
+}
+
+async function cleanDatabase() {
   console.log('🧹 Limpando o banco de dados...');
-  // A ordem importa para não violar as constraints de chave estrangeira
   await prisma.mensagem.deleteMany({});
   await prisma.chat.deleteMany({});
   await prisma.notificacao.deleteMany({});
   await prisma.interesse.deleteMany({});
+  await prisma.avaliacao.deleteMany({});
   await prisma.pedido.deleteMany({});
+  await prisma.endereco.deleteMany({});
   await prisma.user.deleteMany({});
   console.log('✅ Banco de dados limpo.');
+}
 
-  // 2. Criar usuários
-  console.log(`👤 Criando ${TOTAL_USERS + 1} usuários...`);
+async function createUsers(): Promise<User[]> {
+  console.log(`👤 Criando ${TOTAL_RANDOM_USERS + 2} usuários...`);
   const hashedPassword = await bcrypt.hash(TEST_USER_PASSWORD, 10);
 
   const users = [];
@@ -38,14 +49,46 @@ async function main() {
       email: 'test@example.com',
       password: hashedPassword,
       telefone: faker.string.numeric(11),
-      cpf: faker.string.numeric(11),
+      cpf: faker.string.numeric({ length: 11, allowLeadingZeros: true }),
       avatar: `https://i.pravatar.cc/150?u=test@example.com`,
+      endereco: {
+        create: {
+          rua: faker.location.street(),
+          numero: faker.location.buildingNumber(),
+          bairro: faker.location.county(),
+          cidade: faker.location.city(),
+          estado: faker.location.state({ abbreviated: true }),
+          cep: faker.location.zipCode(),
+        },
+      },
     },
   });
   users.push(testUser);
 
-  // Criar usuários aleatórios
-  for (let i = 0; i < TOTAL_USERS; i++) {
+  // Criar segundo usuário de teste
+  const testUser2 = await prisma.user.create({
+    data: {
+      name: 'Usuário de Teste 2',
+      email: 'test2@example.com',
+      password: hashedPassword,
+      telefone: faker.string.numeric(11),
+      cpf: faker.string.numeric({ length: 11, allowLeadingZeros: true }),
+      avatar: `https://i.pravatar.cc/150?u=test2@example.com`,
+      endereco: {
+        create: {
+          rua: faker.location.street(),
+          numero: faker.location.buildingNumber(),
+          bairro: faker.location.county(),
+          cidade: faker.location.city(),
+          estado: faker.location.state({ abbreviated: true }),
+          cep: faker.location.zipCode(),
+        },
+      },
+    },
+  });
+  users.push(testUser2);
+
+  for (let i = 0; i < TOTAL_RANDOM_USERS; i++) {
     const name = faker.person.fullName();
     const email = faker.internet.email({ firstName: name.split(' ')[0] });
     const user = await prisma.user.create({
@@ -54,166 +97,299 @@ async function main() {
         email,
         password: hashedPassword,
         telefone: faker.string.numeric(11),
-        cpf: faker.string.numeric(11),
+        cpf: faker.string.numeric({ length: 11, allowLeadingZeros: true }),
         avatar: `https://i.pravatar.cc/150?u=${email}`,
+        endereco: {
+          create: {
+            rua: faker.location.street(),
+            numero: faker.location.buildingNumber(),
+            bairro: faker.location.county(),
+            cidade: faker.location.city(),
+            estado: faker.location.state({ abbreviated: true }),
+            cep: faker.location.zipCode(),
+          },
+        },
       },
     });
     users.push(user);
   }
   console.log(`✅ ${users.length} usuários criados.`);
+  return users;
+}
 
-  // 3. Criar Pedidos (agora chamados de Feeds)
+async function createPedidos(users: User[]) {
   console.log(`📝 Criando ${TOTAL_PEDIDOS} pedidos (feeds)...`);
   const pedidos = [];
+  const testUser = users[0];
+
+  // Cenários específicos para o usuário de teste
+  // 1. Pedido FINALIZADO e AVALIADO (feito pelo testUser)
+  pedidos.push(
+    await prisma.pedido.create({
+      data: {
+        titulo: 'Preciso de ajuda para montar um móvel (Finalizado)',
+        descricao: 'Comprei um guarda-roupa e preciso de ajuda para montar. Já tenho as ferramentas!',
+        authorId: testUser.id,
+        status: 'FINALIZADO',
+        imagem: `https://picsum.photos/seed/${faker.string.uuid()}/400/300`,
+      },
+    }),
+  );
+
+  // 2. Pedido EM ANDAMENTO (feito pelo testUser)
+  pedidos.push(
+    await prisma.pedido.create({
+      data: {
+        titulo: 'Ajuda para passear com meu cachorro (Em Andamento)',
+        descricao: 'Vou viajar no fim de semana e preciso que alguém passeie com meu golden retriever.',
+        authorId: testUser.id,
+        status: 'EM_ANDAMENTO',
+      },
+    }),
+  );
+
+  // 3. Pedido ABERTO com interessados (feito pelo testUser)
+  pedidos.push(
+    await prisma.pedido.create({
+      data: {
+        titulo: 'Doação de roupas de inverno (Aberto)',
+        descricao: 'Tenho algumas roupas de inverno em bom estado para doar.',
+        authorId: testUser.id,
+        status: 'ABERTO',
+        imagem: `https://picsum.photos/seed/${faker.string.uuid()}/400/300`,
+      },
+    }),
+  );
+
+  // 4. Pedido CANCELADO (feito pelo testUser)
+  pedidos.push(
+    await prisma.pedido.create({
+      data: {
+        titulo: 'Carona para o aeroporto (Cancelado)',
+        descricao: 'Preciso de uma carona para o aeroporto na sexta-feira. (Pedido foi cancelado)',
+        authorId: testUser.id,
+        status: 'CANCELADO',
+      },
+    }),
+  );
+
+  // 5. Pedido ABERTO sem interessados (feito pelo testUser)
+  pedidos.push(
+    await prisma.pedido.create({
+      data: {
+        titulo: 'Alguém tem uma furadeira para emprestar?',
+        descricao: 'Preciso fazer um furo na parede e não tenho furadeira. É rápido!',
+        authorId: testUser.id,
+        status: 'ABERTO',
+      },
+    }),
+  );
+
+  // Cria o restante dos pedidos aleatórios
   for (let i = 0; i < TOTAL_PEDIDOS; i++) {
-    const randomUser = users[Math.floor(Math.random() * users.length)];
-
-    // 50% de chance de ter uma foto
-    const hasPhoto = Math.random() > 0.5;
-
+    // Pega um usuário aleatório que não seja os de teste (índices 2 em diante)
+    const randomUser = users[faker.number.int({ min: 2, max: users.length - 1 })];
     const pedido = await prisma.pedido.create({
       data: {
         titulo: faker.lorem.sentence(5),
         descricao: faker.lorem.paragraph(2),
         authorId: randomUser.id,
-        // Adicionando a foto opcional
-        imagem: hasPhoto
-          ? `https://picsum.photos/seed/${faker.string.uuid()}/400/300`
-          : null,
+        imagem: Math.random() > 0.5 ? `https://picsum.photos/seed/${faker.string.uuid()}/400/300` : null,
       },
     });
     pedidos.push(pedido);
   }
   console.log(`✅ ${pedidos.length} pedidos criados.`);
+}
 
-  // 4. Criar Interesses e Notificações (simulando interação)
-  // E escolher um ajudante para alguns pedidos
-  console.log('❤️  Simulando interações (interesses e notificações)...');
-  let interacoesCriadas = 0;
-  for (const pedido of pedidos) {
-    // Simular interesse de 0 a 3 usuários por pedido
-    const numInteresses = Math.floor(Math.random() * 4);
-    const usersInteressados = faker.helpers.shuffle(users).slice(0, numInteresses);
+async function createInteractionsAndChats(users: User[]) {
+  console.log('❤️  Simulando interações, chats e avaliações...');
+  const testUser = users[0];
+  const testUser2 = users[1];
+  const otherUsers = users.slice(2);
+  
+  // Usaremos uma cópia mutável para remover os pedidos já utilizados
+  let pedidosDisponiveis = await prisma.pedido.findMany();
 
-    for (const userInteressado of usersInteressados) {
-      // O autor não pode se interessar pelo próprio pedido
-      if (userInteressado.id === pedido.authorId) {
-        continue;
-      }
+  // Cenário 1: Pedido do testUser que foi FINALIZADO.
+  // Um usuário aleatório (ajudante) demonstrou interesse, foi escolhido, e o pedido foi finalizado e avaliado.
+  const pedidoFinalizado = pedidosDisponiveis.find(p => p.authorId === testUser.id && p.status === 'FINALIZADO')!;
+  const ajudanteFinalizado = faker.helpers.arrayElement(otherUsers);
+  await createInterest(pedidoFinalizado, ajudanteFinalizado);
+  await prisma.pedido.update({ where: { id: pedidoFinalizado.id }, data: { ajudanteId: ajudanteFinalizado.id } });
+  await createChat(pedidoFinalizado, testUser, ajudanteFinalizado);
+  await createAvaliacao(pedidoFinalizado, testUser, ajudanteFinalizado);
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoFinalizado.id);
 
-      // Verificar se já não existe um interesse
-      const interesseExistente = await prisma.interesse.findUnique({
-        where: {
-          pedidoId_userId: {
-            userId: userInteressado.id,
-            pedidoId: pedido.id,
-          },
-        },
-      });
+  // Cenário 2: Pedido do testUser que está EM ANDAMENTO.
+  // Um usuário aleatório (ajudante) demonstrou interesse, foi escolhido e um chat foi iniciado.
+  const pedidoEmAndamento = pedidosDisponiveis.find(p => p.authorId === testUser.id && p.status === 'EM_ANDAMENTO')!;
+  const ajudanteEmAndamento = faker.helpers.arrayElement(otherUsers.filter(u => u.id !== ajudanteFinalizado.id));
+  await createInterest(pedidoEmAndamento, ajudanteEmAndamento);
+  await prisma.pedido.update({ where: { id: pedidoEmAndamento.id }, data: { ajudanteId: ajudanteEmAndamento.id } });
+  await createChat(pedidoEmAndamento, testUser, ajudanteEmAndamento);
+  await NotificacaoService.criar({
+    userId: ajudanteEmAndamento.id,
+    tipo: 'AJUDANTE_ESCOLHIDO',
+    mensagem: `Você foi escolhido para ajudar no pedido "${pedidoEmAndamento.titulo}"!`,
+    pedidoId: pedidoEmAndamento.id,
+    remetenteId: testUser.id,
+  });
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoEmAndamento.id);
 
-      if (!interesseExistente) {
-        // Cria o interesse
-        await prisma.interesse.create({
-          data: {
-            userId: userInteressado.id,
-            pedidoId: pedido.id,
-          },
-        });
-
-        // Cria a notificação para o autor do pedido
-        await prisma.notificacao.create({
-          data: {
-            tipo: 'INTERESSE_RECEBIDO',
-            mensagem: `${userInteressado.name} demonstrou interesse no seu pedido "${pedido.titulo}".`,
-            userId: pedido.authorId, // Notificação para o autor do pedido
-            remetenteId: userInteressado.id, // Quem demonstrou interesse
-            pedidoId: pedido.id,
-          },
-        });
-        interacoesCriadas++;
-      }
-    }
-
-    // 25% de chance de um pedido com interessados já ter um ajudante escolhido
-    if (usersInteressados.length > 0 && Math.random() < 0.25) {
-      const ajudanteEscolhido = usersInteressados[0]; // Escolhe o primeiro interessado como ajudante
-      if (ajudanteEscolhido.id !== pedido.authorId) {
-        await prisma.pedido.update({
-          where: { id: pedido.id },
-          data: {
-            ajudanteId: ajudanteEscolhido.id,
-            status: 'EM_ANDAMENTO',
-          },
-        });
-        console.log(`  -> 🙋‍♂️ Usuário ${ajudanteEscolhido.name} escolhido para o pedido "${pedido.titulo.substring(0, 20)}..."`);
-
-        // Cria um chat e algumas mensagens de exemplo
-        const [p1, p2] = [pedido.authorId, ajudanteEscolhido.id].sort();
-        const chat = await prisma.chat.create({
-          data: {
-            pedidoId: pedido.id,
-            participante1Id: p1,
-            participante2Id: p2,
-          },
-        });
-
-        await prisma.mensagem.createMany({
-          data: [
-            {
-              chatId: chat.id,
-              senderId: pedido.authorId,
-              conteudo: `Olá ${ajudanteEscolhido.name}, obrigado por se oferecer para ajudar!`,
-            },
-            { chatId: chat.id, senderId: ajudanteEscolhido.id, conteudo: `De nada! Quando podemos combinar?` },
-            { chatId: chat.id, senderId: pedido.authorId, conteudo: `Pode ser amanhã à tarde?` },
-          ],
-        });
-        console.log(`    -> 💬 Chat iniciado para o pedido "${pedido.titulo.substring(0, 20)}..."`);
-      }
-    }
+  // Cenário 3: Pedido do testUser que está ABERTO.
+  // Vários usuários demonstram interesse, mas ninguém foi escolhido ainda.
+  const pedidoAberto = pedidosDisponiveis.find(p => p.authorId === testUser.id && p.status === 'ABERTO' && p.titulo.includes('Doação'))!;
+  const interessadosPedidoAberto = faker.helpers.arrayElements(otherUsers, 3);
+  for (const interessado of interessadosPedidoAberto) {
+    await createInterest(pedidoAberto, interessado);
   }
-  console.log(`✅ ${interacoesCriadas} interações criadas.`);
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoAberto.id);
 
-  // 5. Finalizar alguns pedidos e criar avaliações
-  console.log('⭐ Finalizando pedidos e criando avaliações...');
-  const pedidosEmAndamento = await prisma.pedido.findMany({
-    where: { status: 'EM_ANDAMENTO' },
+  // Cenário 4: Pedido de outro usuário onde o testUser é o AJUDANTE.
+  const pedidoParaAjudar = pedidosDisponiveis.find(p => p.authorId !== testUser.id && p.status === 'ABERTO')!;
+  await createInterest(pedidoParaAjudar, testUser);
+  await prisma.pedido.update({ where: { id: pedidoParaAjudar.id }, data: { ajudanteId: testUser.id, status: 'EM_ANDAMENTO' } });
+  const autorPedidoParaAjudar = users.find(u => u.id === pedidoParaAjudar.authorId)!;
+  await createChat(pedidoParaAjudar, autorPedidoParaAjudar, testUser);
+  await NotificacaoService.criar({
+    userId: testUser.id,
+    tipo: 'AJUDANTE_ESCOLHIDO',
+    mensagem: `Você foi escolhido para ajudar no pedido "${pedidoParaAjudar.titulo}"!`,
+    pedidoId: pedidoParaAjudar.id,
+    remetenteId: autorPedidoParaAjudar.id,
+  });
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoParaAjudar.id);
+
+  // Cenário 4.1: Mais pedidos onde o testUser é o ajudante e é avaliado.
+  const outrosPedidosParaAjudar = pedidosDisponiveis.filter(p => p.authorId !== testUser.id && p.status === 'ABERTO').slice(0, 2);
+  for (const pedido of outrosPedidosParaAjudar) {
+    const autor = users.find(u => u.id === pedido.authorId)!;
+    await createInterest(pedido, testUser);
+    await prisma.pedido.update({ where: { id: pedido.id }, data: { ajudanteId: testUser.id, status: 'FINALIZADO' } });
+    await createChat(pedido, autor, testUser);
+    await createAvaliacao(pedido, autor, testUser, {
+      nota: faker.number.int({ min: 3, max: 5 }),
+      comentario: faker.lorem.sentence({ min: 5, max: 15 })
+    });
+    console.log(`  -> ⭐ testUser avaliado por ${autor.name.split(' ')[0]} no pedido "${pedido.titulo.substring(0, 20)}..."`);
+    pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedido.id);
+  }
+
+
+  // Cenário 5: Pedido de outro usuário onde o testUser demonstra interesse mas NÃO é escolhido.
+  const pedidoNaoEscolhido = pedidosDisponiveis.find(p => p.authorId !== testUser.id && p.status === 'ABERTO')!;
+  await createInterest(pedidoNaoEscolhido, testUser); // testUser se interessa
+  const outroInteressado = faker.helpers.arrayElement(otherUsers.filter(u => u.id !== testUser.id));
+  await createInterest(pedidoNaoEscolhido, outroInteressado); // Outro usuário também se interessa
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoNaoEscolhido.id);
+
+  // Cenário 6: Notificar sobre pedido cancelado
+  const pedidoCancelado = pedidosDisponiveis.find(p => p.status === 'CANCELADO')!;
+  const ajudanteDoCancelado = faker.helpers.arrayElement(otherUsers);
+  await createInterest(pedidoCancelado, ajudanteDoCancelado);
+  await prisma.pedido.update({ where: { id: pedidoCancelado.id }, data: { ajudanteId: ajudanteDoCancelado.id } });
+  await NotificacaoService.criar({
+    userId: ajudanteDoCancelado.id,
+    tipo: 'PEDIDO_CANCELADO',
+    mensagem: `O pedido "${pedidoCancelado.titulo}" foi cancelado pelo autor.`,
+    pedidoId: pedidoCancelado.id,
+    remetenteId: pedidoCancelado.authorId,
   });
 
-  let avaliacoesCriadas = 0;
-  for (const pedido of pedidosEmAndamento) {
-    // 50% de chance de finalizar e avaliar
-    if (Math.random() < 0.5 && pedido.ajudanteId) {
-      await prisma.pedido.update({
-        where: { id: pedido.id },
-        data: { status: 'FINALIZADO' },
-      });
+  // Cenário 7: Interação direta entre os dois usuários de teste.
+  // testUser2 cria um pedido, testUser se interessa, é escolhido e avaliado.
+  const pedidoTestUser2 = await prisma.pedido.create({
+    data: {
+      titulo: 'Pedido do Usuário de Teste 2',
+      descricao: 'Este é um pedido criado pelo segundo usuário de teste para ser ajudado pelo primeiro.',
+      authorId: testUser2.id,
+      status: 'ABERTO',
+    },
+  });
+  await createInterest(pedidoTestUser2, testUser);
+  await prisma.pedido.update({ where: { id: pedidoTestUser2.id }, data: { ajudanteId: testUser.id, status: 'FINALIZADO' } });
+  await createChat(pedidoTestUser2, testUser2, testUser);
+  await createAvaliacao(pedidoTestUser2, testUser2, testUser);
+  console.log(`  -> ⭐ testUser2 avaliou testUser no pedido "${pedidoTestUser2.titulo.substring(0, 20)}..."`);
+  pedidosDisponiveis = pedidosDisponiveis.filter(p => p.id !== pedidoTestUser2.id);
 
-      await prisma.avaliacao.create({
-        data: {
-          pedidoId: pedido.id,
-          avaliadorId: pedido.authorId,
-          avaliadoId: pedido.ajudanteId,
-          nota: faker.number.int({ min: 4, max: 5 }), // Gerar notas altas
-          comentario: faker.lorem.sentence(),
-        },
-      });
-      avaliacoesCriadas++;
-      console.log(`  -> 🏁 Pedido "${pedido.titulo.substring(0, 20)}..." finalizado e avaliado.`);
-    }
-  }
-  if (avaliacoesCriadas > 0) {
-    console.log(`✅ ${avaliacoesCriadas} avaliações criadas.`);
-  }
+  console.log('✅ Interações, chats e avaliações simulados com sucesso.');
+}
 
+async function createInterest(pedido: Pedido, user: User) {
+  await prisma.interesse.create({ data: { pedidoId: pedido.id, userId: user.id } });
+  await NotificacaoService.criar({
+    userId: pedido.authorId,
+    tipo: 'INTERESSE_RECEBIDO',
+    mensagem: `${user.name} demonstrou interesse no seu pedido "${pedido.titulo}".`,
+    pedidoId: pedido.id,
+    remetenteId: user.id,
+  });
+}
+
+async function createChat(pedido: Pedido, user1: User, user2: User) {
+  const [p1, p2] = [user1.id, user2.id].sort();
+  const chat = await prisma.chat.create({
+    data: {
+      pedidoId: pedido.id,
+      participante1Id: p1,
+      participante2Id: p2,
+    },
+  });
+
+  await prisma.mensagem.createMany({
+    data: [
+      { chatId: chat.id, senderId: user1.id, conteudo: `Olá ${user2.name}, obrigado por se oferecer para ajudar!` },
+      { chatId: chat.id, senderId: user2.id, conteudo: `De nada, ${user1.name}! Quando podemos combinar?` },
+      { chatId: chat.id, senderId: user1.id, conteudo: `Pode ser amanhã à tarde?` },
+    ],
+  });
+  console.log(`  -> 💬 Chat criado para o pedido "${pedido.titulo.substring(0, 20)}..."`);
+}
+
+async function createAvaliacao(pedido: Pedido, avaliador: User, avaliado: User, override: { nota?: number, comentario?: string } = {}) {
+  await prisma.avaliacao.create({
+    data: {
+      pedidoId: pedido.id,
+      avaliadorId: avaliador.id,
+      avaliadoId: avaliado.id,
+      nota: override.nota ?? faker.number.int({ min: 4, max: 5 }),
+      comentario: override.comentario ?? faker.lorem.sentence(),
+    },
+  });
+  await NotificacaoService.criar({
+    userId: avaliado.id,
+    tipo: 'PEDIDO_FINALIZADO', // Reutilizando, poderia ser AVALIACAO_RECEBIDA
+    mensagem: `O pedido "${pedido.titulo}" foi finalizado e você recebeu uma avaliação!`,
+    pedidoId: pedido.id,
+    remetenteId: avaliador.id,
+  });
+  console.log(`  -> ⭐ Pedido "${pedido.titulo.substring(0, 20)}..." avaliado.`);
+}
+
+function printSummary(testUser: User, testUser2: User) {
   console.log('\n' + '-'.repeat(50));
   console.log('🎉 Seeding finalizado com sucesso! 🎉');
   console.log('\n' + '-'.repeat(50));
-  console.log('🔑 Credenciais do usuário de teste:');
+  console.log('🔑 Credenciais do Usuário de Teste 1:');
   console.log(`   Email: ${testUser.email}`);
+  console.log(`   Senha: ${TEST_USER_PASSWORD}`);
+  console.log('-'.repeat(50));
+  console.log('🔑 Credenciais do Usuário de Teste 2:');
+  console.log(`   Email: ${testUser2.email}`);
   console.log(`   Senha: ${TEST_USER_PASSWORD}`);
   console.log('-'.repeat(50) + '\n');
 }
+
+// --- Importando o serviço de notificação para o seed ---
+const NotificacaoService = {
+  criar: async (data: any) => {
+    return prisma.notificacao.create({
+      data: { ...data, lida: false },
+    });
+  },
+};
 
 main()
   .catch((e) => {

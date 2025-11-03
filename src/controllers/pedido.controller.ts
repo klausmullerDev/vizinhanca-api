@@ -9,11 +9,17 @@ class PedidoController {
         try {
             const authorId = req.user!.id;
             const pedidoData = { ...req.body };
+            const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-            // Verifica se um arquivo foi enviado e adiciona o caminho ao DTO
-            if (req.file) {
+            // Verifica se uma imagem foi enviada
+            if (files?.imagem?.[0]) {
                 // Normaliza o caminho para ser uma URL válida
-                pedidoData.imagem = `/${req.file.path.replace(/\\/g, '/')}`;
+                pedidoData.imagem = `/${files.imagem[0].path.replace(/\\/g, '/')}`;
+            }
+
+            // Verifica se um vídeo foi enviado
+            if (files?.video?.[0]) {
+                pedidoData.videoPath = `/${files.video[0].path.replace(/\\/g, '/')}`;
             }
 
             const pedido = await PedidoService.create(authorId, pedidoData);

@@ -250,6 +250,29 @@ userRouter.get('/:id/pedidos', authMiddleware, UserController.findPedidosByAutho
 
 /**
  * @swagger
+ * /users/{id}/avaliacoes:
+ *   get:
+ *     tags: [Usuários]
+ *     summary: Busca todas as avaliações recebidas por um usuário
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Lista de avaliações recebidas pelo usuário
+ *       '404':
+ *         description: Usuário não encontrado
+ */
+userRouter.get('/:id/avaliacoes', authMiddleware, UserController.findAvaliacoesRecebidas);
+
+/**
+ * @swagger
  * /users/{id}:
  *   delete:
  *     tags: ['Usuários (Admin)']

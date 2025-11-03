@@ -6,6 +6,7 @@ type PedidoCreateDTO = {
     titulo: string;
     descricao: string;
     imagem?: string; // O campo imagem é opcional
+    videoPath?: string; // O campo vídeo é opcional
 };
 
 type PedidoUpdateDTO = {

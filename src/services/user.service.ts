@@ -145,6 +145,24 @@ class UserService {
     });
   }
 
+  async findAvaliacoesRecebidas(userId: string) {
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    return prisma.avaliacao.findMany({
+      where: { avaliadoId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        avaliador: {
+          select: { id: true, name: true, avatar: true },
+        },
+        pedido: { select: { id: true, titulo: true } },
+      },
+    });
+  }
+
   async create(data: UserCreateDTO): Promise<UserPublic> {
     const userExists = await this.findByEmail(data.email);
     if (userExists) {

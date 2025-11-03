@@ -74,7 +74,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }' // Opcional: esconde a barra superior do Swagger
 }));
 
-const PORT = 3000;
+const PORT = 3001;
 
 // Inicializa a lógica do Socket.IO
 initializeSocket(io);

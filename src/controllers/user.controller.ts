@@ -128,6 +128,17 @@ class UserController {
         }
     }
 
+    async findAvaliacoesRecebidas(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const avaliacoes = await UserService.findAvaliacoesRecebidas(id);
+            return res.status(200).json(avaliacoes);
+        } catch (error: any) {
+            logger.error(`Erro ao buscar avaliações do usuário ${req.params.id}: ${error.message}`);
+            return res.status(404).json({ message: 'Usuário não encontrado ou sem avaliações.' });
+        }
+    }
+
     async findAll(req: Request, res: Response) {
         try {
             const users = await UserService.findAll();

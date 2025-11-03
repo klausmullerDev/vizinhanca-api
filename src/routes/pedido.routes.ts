@@ -57,6 +57,9 @@ pedidoRouter.get('/', PedidoController.findAll);
  *               imagem:
  *                 type: string
  *                 format: binary
+ *               video:
+ *                 type: string
+ *                 format: binary
  *             required:
  *               - titulo
  *               - descricao
@@ -68,7 +71,10 @@ pedidoRouter.get('/', PedidoController.findAll);
  *             schema:
  *               $ref: '#/components/schemas/Pedido'
  */
-pedidoRouter.post('/', upload.single('imagem'), PedidoController.create);
+pedidoRouter.post('/', upload.fields([
+  { name: 'imagem', maxCount: 1 },
+  { name: 'video', maxCount: 1 }
+]), PedidoController.create);
 
 /**
  * @swagger
@@ -279,7 +285,11 @@ pedidoRouter.patch('/:id/desistir', PedidoController.desistir);
  *           format: uuid
  *     responses:
  *       '200':
- *         description: Pedido cancelado com sucesso
+ *         description: Pedido cancelado com sucesso. Retorna o pedido atualizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pedido'
  *       '403':
  *         description: Acesso negado
  */

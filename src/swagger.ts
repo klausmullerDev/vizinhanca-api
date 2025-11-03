@@ -86,6 +86,7 @@ const options: swaggerJsdoc.Options = {
             titulo: { type: 'string' },
             descricao: { type: 'string' },
             imagem: { type: 'string', nullable: true },
+            videoPath: { type: 'string', nullable: true, description: 'Caminho para o vídeo do pedido.' },
             status: { type: 'string', enum: ['ABERTO', 'EM_ANDAMENTO', 'FINALIZADO', 'CANCELADO'] },
             createdAt: { type: 'string', format: 'date-time' },
             author: { $ref: '#/components/schemas/UserSummary' },

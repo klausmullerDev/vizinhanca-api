@@ -9,7 +9,8 @@ class NotificacaoService {
       | 'PEDIDO_FINALIZADO'
       | 'NOVA_MENSAGEM'
       | 'AJUDANTE_DESISTIU'
-      | 'PEDIDO_CANCELADO';
+      | 'PEDIDO_CANCELADO'
+      | 'AVALIACAO_RECEBIDA';
     mensagem: string;
     userId: string;
     remetenteId?: string;
