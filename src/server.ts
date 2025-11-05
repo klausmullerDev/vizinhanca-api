@@ -60,14 +60,14 @@ const swaggerLoginScript = `
   }, 100);
 `;
 
+// Servir arquivos estáticos da pasta 'uploads' ANTES das rotas da API
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 app.use('/users', userRouter); 
 app.use('/pedidos', pedidoRouter); 
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/notificacoes', notificacaoRouter); 
 app.use('/chats', chatRouter);
-
-// Servir arquivos estáticos da pasta 'uploads' DEPOIS das rotas da API
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customJs: [swaggerLoginScript],
