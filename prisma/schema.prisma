@@ -72,6 +72,9 @@ model Pedido {
   authorId     String
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   interesses   Interesse[]
+
+  categoriaId String
+  categoria   Categoria     @relation(fields: [categoriaId], references: [id])
   notificacoes Notificacao[] // Nova relação
   chats        Chat[]
   avaliacoes   Avaliacao[]   // Um pedido pode ter múltiplas avaliações (autor -> ajudante, ajudante -> autor)
@@ -176,6 +179,9 @@ model Avaliacao {
 model Categoria {
   id   String @id @default(uuid())
   name String @unique
+  iconUrl String?
+
+  pedidos Pedido[]
 
   @@map("categorias")
 }

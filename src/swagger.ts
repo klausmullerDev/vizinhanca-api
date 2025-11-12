@@ -23,6 +23,27 @@ const options: swaggerJsdoc.Options = {
         `
       }],
       schemas: {
+        Categoria: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID único da categoria.'
+            },
+            name: {
+              type: 'string',
+              description: 'Nome da categoria.',
+              example: 'Pequenos Reparos'
+            },
+            iconUrl: {
+              type: 'string',
+              format: 'uri',
+              description: 'URL para o ícone da categoria (opcional).',
+              example: 'https://img.icons8.com/ios/50/maintenance.png'
+            }
+          }
+        },
         // User Summary for embedding in other schemas
         UserSummary: {
           type: 'object',
@@ -90,7 +111,11 @@ const options: swaggerJsdoc.Options = {
             status: { type: 'string', enum: ['ABERTO', 'EM_ANDAMENTO', 'FINALIZADO', 'CANCELADO'] },
             createdAt: { type: 'string', format: 'date-time' },
             author: { $ref: '#/components/schemas/UserSummary' },
-            ajudante: { '$ref': '#/components/schemas/UserSummary', nullable: true }
+            ajudante: { '$ref': '#/components/schemas/UserSummary', nullable: true },
+            categoria: {
+              $ref: '#/components/schemas/Categoria',
+              description: 'A categoria associada ao pedido.'
+            }
           }
         },
         Chat: {

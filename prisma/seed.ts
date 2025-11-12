@@ -1,4 +1,4 @@
-import { PrismaClient, User, Pedido } from '@prisma/client';
+import { PrismaClient, User, Pedido, Categoria } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { pt_BR, faker } from '@faker-js/faker';
 
@@ -12,13 +12,12 @@ const TEST_USER_PASSWORD = 'password123';
 // ---------------------
 
 async function main() {
-  const { faker } = await import('@faker-js/faker');
-
   console.log('🚀 Iniciando o processo de seeding...');
   await cleanDatabase();
   const users = await createUsers();
-  await createPedidos(users);
-  await createInteractionsAndChats(users);
+  const categorias = await createCategorias();
+  await createPedidos(users, categorias);
+  await createInteractionsAndChats(users, categorias);
 
   printSummary(users[0], users[1]);
 }
@@ -31,6 +30,7 @@ async function cleanDatabase() {
   await prisma.interesse.deleteMany({});
   await prisma.avaliacao.deleteMany({});
   await prisma.pedido.deleteMany({});
+  await prisma.categoria.deleteMany({});
   await prisma.endereco.deleteMany({});
   await prisma.user.deleteMany({});
   console.log('✅ Banco de dados limpo.');
@@ -117,7 +117,29 @@ async function createUsers(): Promise<User[]> {
   return users;
 }
 
-async function createPedidos(users: User[]) {
+async function createCategorias(): Promise<Categoria[]> {
+  console.log('📚 Criando categorias...');
+  const categoriasData = [
+    { name: 'Pequenos Reparos', iconUrl: 'https://img.icons8.com/ios/50/maintenance.png' },
+    { name: 'Transporte/Carona', iconUrl: 'https://img.icons8.com/ios/50/car.png' },
+    { name: 'Cuidados com Pets', iconUrl: 'https://img.icons8.com/ios/50/pet-commands-train.png' },
+    { name: 'Doações', iconUrl: 'https://img.icons8.com/ios/50/donate.png' },
+    { name: 'Aulas/Conhecimento', iconUrl: 'https://img.icons8.com/ios/50/learning.png' },
+    { name: 'Ajuda com Tecnologia', iconUrl: 'https://img.icons8.com/ios/50/laptop-settings.png' },
+    { name: 'Eventos Comunitários', iconUrl: 'https://img.icons8.com/ios/50/confetti.png' },
+    { name: 'Outros Favores', iconUrl: 'https://img.icons8.com/ios/50/generic-sorting.png' },
+  ];
+
+  const categorias = [];
+  for (const cat of categoriasData) {
+    categorias.push(await prisma.categoria.create({ data: cat }));
+  }
+
+  console.log(`✅ ${categorias.length} categorias criadas.`);
+  return categorias;
+}
+
+async function createPedidos(users: User[], categorias: Categoria[]) {
   console.log(`📝 Criando ${TOTAL_PEDIDOS} pedidos (feeds)...`);
   const pedidos = [];
   const testUser = users[0];
@@ -131,6 +153,7 @@ async function createPedidos(users: User[]) {
         descricao: 'Comprei um guarda-roupa e preciso de ajuda para montar. Já tenho as ferramentas!',
         authorId: testUser.id,
         status: 'FINALIZADO',
+        categoriaId: categorias.find(c => c.name === 'Pequenos Reparos')!.id,
         imagem: `https://picsum.photos/seed/${faker.string.uuid()}/400/300`,
       },
     }),
@@ -144,6 +167,7 @@ async function createPedidos(users: User[]) {
         descricao: 'Vou viajar no fim de semana e preciso que alguém passeie com meu golden retriever.',
         authorId: testUser.id,
         status: 'EM_ANDAMENTO',
+        categoriaId: categorias.find(c => c.name === 'Cuidados com Pets')!.id,
       },
     }),
   );
@@ -156,6 +180,7 @@ async function createPedidos(users: User[]) {
         descricao: 'Tenho algumas roupas de inverno em bom estado para doar.',
         authorId: testUser.id,
         status: 'ABERTO',
+        categoriaId: categorias.find(c => c.name === 'Doações')!.id,
         imagem: `https://picsum.photos/seed/${faker.string.uuid()}/400/300`,
       },
     }),
@@ -169,6 +194,7 @@ async function createPedidos(users: User[]) {
         descricao: 'Preciso de uma carona para o aeroporto na sexta-feira. (Pedido foi cancelado)',
         authorId: testUser.id,
         status: 'CANCELADO',
+        categoriaId: categorias.find(c => c.name === 'Transporte/Carona')!.id,
       },
     }),
   );
@@ -181,6 +207,7 @@ async function createPedidos(users: User[]) {
         descricao: 'Preciso fazer um furo na parede e não tenho furadeira. É rápido!',
         authorId: testUser.id,
         status: 'ABERTO',
+        categoriaId: categorias.find(c => c.name === 'Pequenos Reparos')!.id,
       },
     }),
   );
@@ -194,6 +221,8 @@ async function createPedidos(users: User[]) {
         titulo: faker.lorem.sentence(5),
         descricao: faker.lorem.paragraph(2),
         authorId: randomUser.id,
+        categoriaId: faker.helpers.arrayElement(categorias).id,
+        status: faker.helpers.arrayElement(['ABERTO', 'ABERTO', 'ABERTO', 'EM_ANDAMENTO', 'FINALIZADO']),
         imagem: Math.random() > 0.5 ? `https://picsum.photos/seed/${faker.string.uuid()}/400/300` : null,
       },
     });
@@ -202,7 +231,7 @@ async function createPedidos(users: User[]) {
   console.log(`✅ ${pedidos.length} pedidos criados.`);
 }
 
-async function createInteractionsAndChats(users: User[]) {
+async function createInteractionsAndChats(users: User[], categorias: Categoria[]) {
   console.log('❤️  Simulando interações, chats e avaliações...');
   const testUser = users[0];
   const testUser2 = users[1];
@@ -305,6 +334,7 @@ async function createInteractionsAndChats(users: User[]) {
       descricao: 'Este é um pedido criado pelo segundo usuário de teste para ser ajudado pelo primeiro.',
       authorId: testUser2.id,
       status: 'ABERTO',
+      categoriaId: categorias.find(c => c.name === 'Ajuda com Tecnologia')!.id,
     },
   });
   await createInterest(pedidoTestUser2, testUser);

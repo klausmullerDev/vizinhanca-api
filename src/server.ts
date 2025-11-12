@@ -9,6 +9,7 @@ import pedidoRouter from './routes/pedido.routes';
 import avaliacaoRouter from './routes/avaliacao.routes';
 import notificacaoRouter from './routes/notificacao.routes';
 import chatRouter from './routes/chat.routes';
+import categoriaRouter from './routes/categoria.routes'; // 1. Importar o router de categorias
 import logger from './utils/logger';
 import { initializeSocket } from './socket';
 import path from 'path';
@@ -68,6 +69,7 @@ app.use('/pedidos', pedidoRouter);
 app.use('/avaliacoes', avaliacaoRouter);
 app.use('/notificacoes', notificacaoRouter); 
 app.use('/chats', chatRouter);
+app.use('/categorias', categoriaRouter); // 2. Registrar a rota de categorias
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customJs: [swaggerLoginScript],

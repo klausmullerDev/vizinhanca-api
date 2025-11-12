@@ -16,16 +16,27 @@ pedidoRouter.use(authMiddleware);
  *     tags: [Pedidos]
  *     summary: Lista todos os pedidos
  *     security:
- *       - bearerAuth: []
+ *       - bearerAuth: [] # Indica que esta rota requer autenticação
  *     parameters:
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Termo para buscar nos títulos e descrições dos pedidos.
+ *         description: Termo para buscar nos títulos e descrições.
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ABERTO, EM_ANDAMENTO, FINALIZADO, CANCELADO]
+ *         description: Filtra pedidos por status.
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: string
+ *         description: Filtra os pedidos pelo ID da categoria.
  *     responses:
  *       '200':
- *         description: Lista de pedidos
+ *         description: Uma lista de pedidos, possivelmente filtrada.
  *         content:
  *           application/json:
  *             schema:
@@ -60,6 +71,9 @@ pedidoRouter.get('/', PedidoController.findAll);
  *               video:
  *                 type: string
  *                 format: binary
+ *               categoriaId:
+ *                 type: string
+ *                 description: ID da categoria à qual o pedido pertence.
  *             required:
  *               - titulo
  *               - descricao

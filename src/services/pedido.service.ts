@@ -1,10 +1,12 @@
 import { prisma } from '../database/prismaClient';
-import { Pedido } from '@prisma/client';
+import { Pedido, Prisma } from '@prisma/client';
 import NotificacaoService from './notificacao.service';
+import { BadRequestError, NotFoundError, ForbiddenError } from '../utils/errors';
 
 type PedidoCreateDTO = {
     titulo: string;
     descricao: string;
+    categoriaId: string;
     imagem?: string; // O campo imagem é opcional
     videoPath?: string; // O campo vídeo é opcional
 };
@@ -17,6 +19,9 @@ type PedidoUpdateDTO = {
 
 class PedidoService {
     async create(authorId: string, data: PedidoCreateDTO): Promise<Pedido> {
+        if (!data.categoriaId) {
+            throw new BadRequestError('A categoria é obrigatória para criar um pedido.');
+        }
         const pedido = await prisma.pedido.create({
             data: {
                 ...data,
@@ -26,21 +31,30 @@ class PedidoService {
         return pedido;
     }
 
-    async findAll(userId?: string, search?: string): Promise<any[]> {
-        const whereClause: any = {};
+    async findAll(userId?: string, filters: { search?: string, status?: string, categoryId?: string } = {}): Promise<any[]> {
+        const whereClause: Prisma.PedidoWhereInput = {};
 
-        if (search) {
+        if (filters.search) {
             whereClause.OR = [
-                { titulo: { contains: search, mode: 'insensitive' } },
-                { descricao: { contains: search, mode: 'insensitive' } },
+                { titulo: { contains: filters.search, mode: 'insensitive' } },
+                { descricao: { contains: filters.search, mode: 'insensitive' } },
             ];
+        }
+
+        if (filters.status) {
+            whereClause.status = filters.status.toUpperCase();
+        }
+
+        if (filters.categoryId) { // Corrigindo o nome do filtro
+            whereClause.categoriaId = filters.categoryId;
         }
 
         const pedidos = await prisma.pedido.findMany({
             where: whereClause,
             orderBy: { createdAt: 'desc' },
             include: {
-                author: { select: { id: true, name: true, avatar: true } },
+                author: { select: { id: true, name: true, avatar: true, endereco: true } },
+                categoria: true,
                 _count: {
                     select: { interesses: true }
                 },
@@ -72,13 +86,13 @@ class PedidoService {
         const pedido = await prisma.pedido.findUnique({
             where: { id },
             include: {
-                author: { select: { id: true, name: true, avatar: true } },
+                author: { select: { id: true, name: true, avatar: true, endereco: true } },
                 ajudante: { select: { id: true, name: true, avatar: true } },
                 interesses: { include: { user: { select: { id: true, name: true, avatar: true } } } },
             },
         });
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
 
         // Se um userId for fornecido, verifica se ele já demonstrou interesse
@@ -102,10 +116,10 @@ class PedidoService {
     async delete(id: string, userId: string): Promise<void> {
         const pedido = await prisma.pedido.findUnique({ where: { id } });
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.authorId !== userId) {
-            throw new Error('Acesso negado');
+            throw new ForbiddenError('Acesso negado');
         }
         await prisma.pedido.delete({ where: { id } });
     }
@@ -113,10 +127,10 @@ class PedidoService {
     async addInteresse(pedidoId: string, userId: string) {
         const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.authorId === userId) {
-            throw new Error('Você não pode demonstrar interesse no seu próprio pedido.');
+            throw new BadRequestError('Você não pode demonstrar interesse no seu próprio pedido.');
         }
 
         // Verifica se o usuário já demonstrou interesse neste pedido
@@ -130,7 +144,7 @@ class PedidoService {
         });
 
         if (interesseExistente) {
-            throw new Error('Você já demonstrou interesse neste pedido.');
+            throw new BadRequestError('Você já demonstrou interesse neste pedido.');
         }
 
         const interesse = await prisma.interesse.create({
@@ -161,16 +175,16 @@ class PedidoService {
         });
 
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.authorId !== authorId) {
-            throw new Error('Acesso negado. Apenas o autor do pedido pode escolher um ajudante.');
+            throw new ForbiddenError('Acesso negado. Apenas o autor do pedido pode escolher um ajudante.');
         }
         if (pedido.ajudanteId) {
-            throw new Error('Este pedido já possui um ajudante.');
+            throw new BadRequestError('Este pedido já possui um ajudante.');
         }
         if (pedido.interesses.length === 0) {
-            throw new Error('O usuário escolhido não demonstrou interesse neste pedido.');
+            throw new BadRequestError('O usuário escolhido não demonstrou interesse neste pedido.');
         }
 
         const pedidoAtualizado = await prisma.pedido.update({
@@ -199,13 +213,13 @@ class PedidoService {
         });
 
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.authorId !== authorId) {
-            throw new Error('Acesso negado. Apenas o autor pode finalizar o pedido.');
+            throw new ForbiddenError('Acesso negado. Apenas o autor pode finalizar o pedido.');
         }
         if (pedido.status !== 'EM_ANDAMENTO') {
-            throw new Error('Apenas pedidos em andamento podem ser finalizados.');
+            throw new BadRequestError('Apenas pedidos em andamento podem ser finalizados.');
         }
 
         return prisma.pedido.update({
@@ -220,13 +234,13 @@ class PedidoService {
         });
 
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.ajudanteId !== ajudanteId) {
-            throw new Error('Acesso negado. Apenas o ajudante escolhido pode desistir.');
+            throw new ForbiddenError('Acesso negado. Apenas o ajudante escolhido pode desistir.');
         }
         if (pedido.status !== 'EM_ANDAMENTO') {
-            throw new Error('Não é possível desistir de um pedido que não está em andamento.');
+            throw new BadRequestError('Não é possível desistir de um pedido que não está em andamento.');
         }
 
         // Notificar o autor do pedido
@@ -252,13 +266,13 @@ class PedidoService {
         });
 
         if (!pedido) {
-            throw new Error('Pedido não encontrado');
+            throw new NotFoundError('Pedido não encontrado');
         }
         if (pedido.authorId !== authorId) {
-            throw new Error('Acesso negado. Apenas o autor pode cancelar o pedido.');
+            throw new ForbiddenError('Acesso negado. Apenas o autor pode cancelar o pedido.');
         }
         if (['FINALIZADO', 'CANCELADO'].includes(pedido.status)) {
-            throw new Error(`Este pedido já está ${pedido.status.toLowerCase()} e não pode ser cancelado.`);
+            throw new BadRequestError(`Este pedido já está ${pedido.status.toLowerCase()} e não pode ser cancelado.`);
         }
 
         const pedidoCancelado = await prisma.pedido.update({
